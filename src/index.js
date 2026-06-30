@@ -1,4 +1,5 @@
-const CORPUS_JSON_URL = "https://script.google.com/a/macros/cloudflare.com/s/AKfycbzI32BLudkXgQIAPycWMjRnmlOmRCAmnYJyIMUYOXum6K8fR-4CJqdi3G0kv4935VWF/exec?sheet=Core%20Corpus";
+const R2_BUCKET = "policy-brain";
+const CORPUS_OBJECT_KEY = "Policy Brain - Master Tracker.csv";
 
 export default {
   async fetch(request, env) {
@@ -62,8 +63,7 @@ export default {
                     body: JSON.stringify({
                       mode: modeEl.value,
                       text: textEl.value,
-                      voice: voiceEl.value,
-                      corpusJsonUrl: '${CORPUS_JSON_URL}'
+                      voice: voiceEl.value
                     })
                   });
 
@@ -83,8 +83,9 @@ export default {
       return json({
         ok: true,
         service: "policy-brain-worker",
-        mode: "no-d1",
-        corpusJsonUrl: CORPUS_JSON_URL
+        mode: "r2",
+        bucket: R2_BUCKET,
+        objectKey: CORPUS_OBJECT_KEY
       });
     }
 
@@ -93,18 +94,14 @@ export default {
       const mode = body.mode || "legislation";
       const inputText = body.text || "";
       const voice = body.voice || "Alyssa-CLO-public-comment";
-      const corpusJsonUrl = body.corpusJsonUrl || CORPUS_JSON_URL;
 
       if (!inputText.trim()) {
         return json({ error: "Missing text input." }, 400);
       }
 
-      let corpusText = "";
-      if (corpusJsonUrl) {
-        corpusText = await fetchCorpus(corpusJsonUrl);
-      }
-
+      const corpusText = await fetchCorpusFromR2(env);
       const prompt = buildPrompt({ mode, inputText, voice, corpusText });
+
       const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct", {
         prompt,
         max_tokens: 1200,
@@ -114,7 +111,8 @@ export default {
       return json({
         mode,
         voice,
-        corpusJsonUrl,
+        bucket: R2_BUCKET,
+        objectKey: CORPUS_OBJECT_KEY,
         output: response.response || response,
       });
     }
@@ -123,32 +121,66 @@ export default {
   },
 };
 
-async function fetchCorpus(url) {
+async function fetchCorpusFromR2(env) {
   try {
-    const res = await fetch(url, { headers: { "user-agent": "policy-brain-worker/1.0" } });
-    if (!res.ok) return "";
-    const data = await res.json();
-    return corpusToText(data);
+    const obj = await env[R2_BUCKET].get(CORPUS_OBJECT_KEY);
+    if (!obj) return "";
+    const text = await obj.text();
+    return normalizeCorpusText(text);
   } catch {
     return "";
   }
 }
 
-function corpusToText(data) {
-  if (!data || !Array.isArray(data.rows)) return "";
+function normalizeCorpusText(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return "";
 
-  return data.rows
-    .slice(0, 25)
-    .map((row, idx) => {
-      const title = row["original_title"] || row["title"] || row["originalTitle"] || "(untitled)";
-      const topic = row["topic"] || "";
-      const jurisdiction = row["jurisdiction"] || "";
-      const status = row["status"] || "";
-      const coreScore = row["core_score"] || row["coreScore"] || "";
-      const summary = row["summary"] || "";
-      return `${idx + 1}. ${title} | topic=${topic} | jurisdiction=${jurisdiction} | status=${status} | score=${coreScore} | summary=${summary}`;
-    })
-    .join("\n");
+  const lines = raw.split(/\r?\n/);
+  const firstLine = lines[0] || "";
+  const looksCsv = firstLine.includes(",") && firstLine.toLowerCase().includes("file_id");
+
+  if (!looksCsv) return raw.slice(0, 12000);
+
+  const headers = parseCsvLine(firstLine);
+  const rows = lines.slice(1, 26).map(line => {
+    const cols = parseCsvLine(line);
+    const row = Object.fromEntries(headers.map((h, i) => [h, cols[i] ?? ""]));
+    const title = row.original_title || row.title || row.originalTitle || "(untitled)";
+    const topic = row.topic || "";
+    const jurisdiction = row.jurisdiction || "";
+    const status = row.status || "";
+    const score = row.core_score || row.coreScore || "";
+    const summary = row.summary || "";
+    return `${title} | topic=${topic} | jurisdiction=${jurisdiction} | status=${status} | score=${score} | summary=${summary}`;
+  });
+
+  return rows.join("\n");
+}
+
+function parseCsvLine(line) {
+  const out = [];
+  let cur = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    const next = line[i + 1];
+    if (ch === "\"") {
+      if (inQuotes && next === "\"") {
+        cur += "\"";
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === "," && !inQuotes) {
+      out.push(cur);
+      cur = "";
+    } else {
+      cur += ch;
+    }
+  }
+  out.push(cur);
+  return out;
 }
 
 function buildPrompt({ mode, inputText, voice, corpusText }) {
