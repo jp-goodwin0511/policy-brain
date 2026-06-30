@@ -227,25 +227,7 @@ export default {
     }
   });
 
-  function formatResponse(data) {
-    if (!data) return '<div>No response.</div>';
-    if (data.error) return '<strong>Error:</strong> ' + escapeHtml(String(data.error));
-
-    const output = String(data.output || '');
-    const sections = splitSections(output);
-
-    return sections.map(([title, body]) => {
-      const safeTitle = escapeHtml(title);
-      const safeBody = escapeHtml(body).replace(/\n/g, '<br>');
-      return `
-        <div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
-          <div style="font-weight:700; margin-bottom:8px; color:#56c2ff;">${safeTitle}</div>
-          <div style="white-space: normal; line-height: 1.6;">${safeBody}</div>
-        </div>
-      `;
-    }).join('');
-  }
-  function formatResponse(data) {
+function formatResponse(data) {
   if (!data) return '<div>No response.</div>';
   if (data.error) return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
 
@@ -254,17 +236,16 @@ export default {
 
   const sections = splitSections(output);
 
-  return sections.map(([title, body]) => {
+  return sections.map(function(pair) {
+    const title = pair[0];
+    const body = pair[1];
     const safeTitle = escapeHtml(title);
+    const safeBody = renderMarkdownish(body);
 
-    const renderedBody = renderMarkdownish(body);
-
-    return `
-      <div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
-        <div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">${safeTitle}</div>
-        <div style="line-height: 1.6;">${renderedBody}</div>
-      </div>
-    `;
+    return '<div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">' +
+      '<div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">' + safeTitle + '</div>' +
+      '<div style="line-height: 1.6;">' + safeBody + '</div>' +
+    '</div>';
   }).join('');
 }
 
@@ -277,7 +258,9 @@ function splitSections(text) {
   for (const line of lines) {
     const heading = line.match(/^\s*\*\*([^*]+)\*\*\s*:?$/);
     if (heading) {
-      if (currentBody.length) sections.push([currentTitle, currentBody.join('\n').trim()]);
+      if (currentBody.length) {
+        sections.push([currentTitle, currentBody.join('\n').trim()]);
+      }
       currentTitle = heading[1].trim();
       currentBody = [];
       continue;
@@ -285,18 +268,19 @@ function splitSections(text) {
     currentBody.push(line);
   }
 
-  if (currentBody.length) sections.push([currentTitle, currentBody.join('\n').trim()]);
-  return sections.length ? sections : [['Response', text]];
+  if (currentBody.length) {
+    sections.push([currentTitle, currentBody.join('\n').trim()]);
+  }
+
+  return sections.length ? sections : [['Response', String(text || '')]];
 }
 
 function renderMarkdownish(text) {
   const safe = escapeHtml(String(text || ''));
-
-  // bold
   let html = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
   const lines = html.split(/\r?\n/);
-  let out = [];
+  const out = [];
   let inList = false;
 
   for (const line of lines) {
@@ -309,7 +293,7 @@ function renderMarkdownish(text) {
         inList = true;
       }
       const content = bullet ? bullet[1] : numbered[2];
-      out.push(`<li style="margin: 6px 0;">${content}</li>`);
+      out.push('<li style="margin: 6px 0;">' + content + '</li>');
       continue;
     }
 
@@ -321,7 +305,7 @@ function renderMarkdownish(text) {
     if (!line.trim()) {
       out.push('<div style="height: 10px;"></div>');
     } else {
-      out.push(`<div style="margin: 6px 0;">${line}</div>`);
+      out.push('<div style="margin: 6px 0;">' + line + '</div>');
     }
   }
 
