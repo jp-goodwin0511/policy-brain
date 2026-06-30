@@ -6,5 +6,5 @@ compatibility_date = "2026-06-30"
 binding = "AI"
 
 [[r2_buckets]]
-binding = "policy-brain"
+binding = "policy_brain"
 bucket_name = "policy-brain"
