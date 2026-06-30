@@ -1,9 +1,11 @@
+const CORPUS_JSON_URL = "https://script.google.com/a/macros/cloudflare.com/s/AKfycbzI32BLudkXgQIAPycWMjRnmlOmRCAmnYJyIMUYOXum6K8fR-4CJqdi3G0kv4935VWF/exec?sheet=Core%20Corpus";
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === "/health") {
-      return json({ ok: true, service: "policy-brain-worker", mode: "no-d1" });
+      return json({ ok: true, service: "policy-brain-worker", mode: "no-d1", corpusJsonUrl: CORPUS_JSON_URL });
     }
 
     if (url.pathname === "/analyze" && request.method === "POST") {
@@ -11,7 +13,7 @@ export default {
       const mode = body.mode || "legislation";
       const inputText = body.text || "";
       const voice = body.voice || "Alyssa-CLO-public-comment";
-      const corpusJsonUrl = body.corpusJsonUrl || "";
+      const corpusJsonUrl = body.corpusJsonUrl || CORPUS_JSON_URL;
 
       if (!inputText.trim()) {
         return json({ error: "Missing text input." }, 400);
@@ -19,7 +21,7 @@ export default {
 
       let corpusText = "";
       if (corpusJsonUrl) {
-        corpusText = await fetchJson(corpusJsonUrl);
+        corpusText = await fetchCorpus(corpusJsonUrl);
       }
 
       const prompt = buildPrompt({ mode, inputText, voice, corpusText });
@@ -41,19 +43,37 @@ export default {
   },
 };
 
-async function fetchJson(url) {
+async function fetchCorpus(url) {
   try {
     const res = await fetch(url, { headers: { "user-agent": "policy-brain-worker/1.0" } });
     if (!res.ok) return "";
-    return await res.text();
+    const data = await res.json();
+    return corpusToText(data);
   } catch {
     return "";
   }
 }
 
+function corpusToText(data) {
+  if (!data || !Array.isArray(data.rows)) return "";
+
+  return data.rows
+    .slice(0, 25)
+    .map((row, idx) => {
+      const title = row["original_title"] || row["title"] || row["originalTitle"] || "(untitled)";
+      const topic = row["topic"] || "";
+      const jurisdiction = row["jurisdiction"] || "";
+      const status = row["status"] || "";
+      const coreScore = row["core_score"] || row["coreScore"] || "";
+      const summary = row["summary"] || "";
+      return `${idx + 1}. ${title} | topic=${topic} | jurisdiction=${jurisdiction} | status=${status} | score=${coreScore} | summary=${summary}`;
+    })
+    .join("\n");
+}
+
 function buildPrompt({ mode, inputText, voice, corpusText }) {
   const corpusBlock = corpusText
-    ? `\n\nRelevant corpus data (CSV or text):\n${corpusText.slice(0, 12000)}`
+    ? `\n\nRelevant corpus data:\n${corpusText}`
     : "\n\nRelevant corpus data: (none provided)";
 
   if (mode === "draft-review") {
