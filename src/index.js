@@ -219,13 +219,53 @@ export default {
             });
 
             const data = await res.json();
-            outputEl.textContent = JSON.stringify(data, null, 2);
+            outputEl.innerHTML = formatResponse(data);
             loadState.textContent = res.ok ? 'Done' : 'Error';
           } catch (err) {
             outputEl.textContent = 'Error: ' + err.message;
             loadState.textContent = 'Error';
           }
         });
+
+        function formatResponse(data) {
+          if (!data) return '<div>No response.</div>';
+          if (data.error) {
+            return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
+          }
+
+          const output = String(data.output || '').trim();
+          if (!output) return '<div>No output.</div>';
+
+          return output
+            .split(/\n\s*\n/)
+            .map(function(block) {
+              const lines = block.split(/\r?\n/).filter(Boolean);
+              if (!lines.length) return '';
+              const title = lines[0].replace(/^\*\*|\*\*$/g, '').replace(/:$/, '').trim();
+              const body = lines.slice(1).join('\n').trim();
+        
+              const safeTitle = escapeHtml(title || 'Response');
+              const safeBody = escapeHtml(body)
+                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+        
+              return '<div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">' +
+                '<div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">' + safeTitle + '</div>' +
+                '<div style="line-height: 1.6;">' + safeBody + '</div>' +
+              '</div>';
+            })
+            .join('');
+          }
+
+        function escapeHtml(str) {
+          return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+        }
+                
       </script>
     </body>
   </html>
