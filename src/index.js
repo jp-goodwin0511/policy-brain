@@ -105,7 +105,7 @@ export default {
     const corpusText = await fetchCorpusFromR2(env);
     const prompt = buildPrompt({ mode, inputText, voice, corpusText });
 
-    const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct', {
+    const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
       prompt,
       max_tokens: 1200,
       temperature: 0.3,
