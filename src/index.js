@@ -80,14 +80,16 @@ export default {
     }
 
     if (url.pathname === "/health") {
-      return json({
-        ok: true,
-        service: "policy-brain-worker",
-        mode: "r2",
-        bucket: R2_BUCKET,
-        objectKey: CORPUS_OBJECT_KEY
-      });
-    }
+  const corpus = await fetchCorpusFromR2(env);
+  return json({
+    ok: true,
+    service: "policy-brain-worker",
+    mode: "r2",
+    bucket: R2_BUCKET,
+    objectKey: CORPUS_OBJECT_KEY,
+    corpusPreview: corpus.slice(0, 300)
+  });
+}
 
     if (url.pathname === "/analyze" && request.method === "POST") {
       const body = await request.json();
