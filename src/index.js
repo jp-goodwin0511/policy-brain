@@ -4,8 +4,88 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (url.pathname === "/") {
+      return html(`
+        <!doctype html>
+        <html>
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>Policy Brain Copilot</title>
+            <style>
+              body { font-family: system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; }
+              textarea { width: 100%; min-height: 220px; padding: 12px; font-size: 14px; }
+              select, button, input { font-size: 14px; padding: 10px 12px; }
+              button { margin-right: 8px; }
+              pre { white-space: pre-wrap; background: #f6f8fa; padding: 16px; border-radius: 8px; overflow-x: auto; }
+              .row { margin: 12px 0; }
+            </style>
+          </head>
+          <body>
+            <h1>Policy Brain Copilot</h1>
+            <p>Paste a draft document or legislation, choose a mode, then click Analyze.</p>
+
+            <div class="row">
+              <select id="mode">
+                <option value="draft-review">Draft review</option>
+                <option value="legislation" selected>Legislation / policy analysis</option>
+              </select>
+              <button id="analyze">Analyze</button>
+            </div>
+
+            <div class="row">
+              <textarea id="text" placeholder="Paste a draft document, bill, or consultation here..."></textarea>
+            </div>
+
+            <div class="row">
+              <label for="voice">Voice:</label>
+              <input id="voice" value="Alyssa-CLO-public-comment" style="width: 320px;" />
+            </div>
+
+            <div class="row">
+              <pre id="output">Results will appear here.</pre>
+            </div>
+
+            <script>
+              const analyzeBtn = document.getElementById('analyze');
+              const textEl = document.getElementById('text');
+              const modeEl = document.getElementById('mode');
+              const voiceEl = document.getElementById('voice');
+              const outputEl = document.getElementById('output');
+
+              analyzeBtn.addEventListener('click', async () => {
+                outputEl.textContent = 'Analyzing...';
+                try {
+                  const res = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      mode: modeEl.value,
+                      text: textEl.value,
+                      voice: voiceEl.value,
+                      corpusJsonUrl: '${CORPUS_JSON_URL}'
+                    })
+                  });
+
+                  const data = await res.json();
+                  outputEl.textContent = JSON.stringify(data, null, 2);
+                } catch (err) {
+                  outputEl.textContent = 'Error: ' + err.message;
+                }
+              });
+            </script>
+          </body>
+        </html>
+      `);
+    }
+
     if (url.pathname === "/health") {
-      return json({ ok: true, service: "policy-brain-worker", mode: "no-d1", corpusJsonUrl: CORPUS_JSON_URL });
+      return json({
+        ok: true,
+        service: "policy-brain-worker",
+        mode: "no-d1",
+        corpusJsonUrl: CORPUS_JSON_URL
+      });
     }
 
     if (url.pathname === "/analyze" && request.method === "POST") {
@@ -87,5 +167,11 @@ function json(obj, status = 200) {
   return new Response(JSON.stringify(obj, null, 2), {
     status,
     headers: { "content-type": "application/json; charset=utf-8" },
+  });
+}
+
+function html(body) {
+  return new Response(body, {
+    headers: { "content-type": "text/html; charset=utf-8" },
   });
 }
