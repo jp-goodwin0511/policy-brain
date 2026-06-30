@@ -11,15 +11,15 @@ export default {
       const mode = body.mode || "legislation";
       const inputText = body.text || "";
       const voice = body.voice || "Alyssa-CLO-public-comment";
-      const corpusCsvUrl = body.corpusCsvUrl || "";
+      const corpusJsonUrl = body.corpusJsonUrl || "";
 
       if (!inputText.trim()) {
         return json({ error: "Missing text input." }, 400);
       }
 
       let corpusText = "";
-      if (corpusCsvUrl) {
-        corpusText = await fetchText(corpusCsvUrl);
+      if (corpusJsonUrl) {
+        corpusText = await fetchJson(corpusJsonUrl);
       }
 
       const prompt = buildPrompt({ mode, inputText, voice, corpusText });
@@ -32,7 +32,7 @@ export default {
       return json({
         mode,
         voice,
-        corpusCsvUrl,
+        corpusJsonUrl,
         output: response.response || response,
       });
     }
@@ -41,7 +41,7 @@ export default {
   },
 };
 
-async function fetchText(url) {
+async function fetchJson(url) {
   try {
     const res = await fetch(url, { headers: { "user-agent": "policy-brain-worker/1.0" } });
     if (!res.ok) return "";
@@ -68,5 +68,4 @@ function json(obj, status = 200) {
     status,
     headers: { "content-type": "application/json; charset=utf-8" },
   });
-}
 }
