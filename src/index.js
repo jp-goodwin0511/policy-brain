@@ -1,4 +1,4 @@
-const R2_BUCKET = "policy-brain";
+const R2_BUCKET = "policy_brain";
 const CORPUS_OBJECT_KEY = "Policy Brain - Master Tracker.csv";
 
 export default {
