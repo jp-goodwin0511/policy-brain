@@ -102,7 +102,7 @@ export default {
       return json({ error: 'Missing text input.' }, 400);
     }
 
-    const corpusText = await fetchCorpusFromR2(env);
+    const corpusText = await fetchCorpusFromR2(env, inputText);
     const prompt = buildPrompt({ mode, inputText, voice, corpusText });
 
     const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
@@ -129,41 +129,58 @@ export default {
   },
 };
 
-async function fetchCorpusFromR2(env) {
+async function fetchCorpusFromR2(env, inputText = '') {
   try {
     const obj = await env.policy_brain.get(CORPUS_OBJECT_KEY);
-    if (!obj) return "";
+    if (!obj) return '';
     const text = await obj.text();
-    return normalizeCorpusText(text);
+    return normalizeCorpusText(text, inputText);
   } catch {
-    return "";
+    return '';
   }
 }
 
-function normalizeCorpusText(text) {
-  const raw = String(text || "").trim();
-  if (!raw) return "";
+function normalizeCorpusText(text, inputText = '') {
+  const raw = String(text || '').trim();
+  if (!raw) return '';
 
   const lines = raw.split(/\r?\n/);
-  const firstLine = lines[0] || "";
-  const looksCsv = firstLine.includes(",") && firstLine.toLowerCase().includes("file_id");
+  const firstLine = lines[0] || '';
+  const looksCsv = firstLine.includes(',') && firstLine.toLowerCase().includes('file_id');
 
   if (!looksCsv) return raw.slice(0, 12000);
 
   const headers = parseCsvLine(firstLine);
-  const rows = lines.slice(1, 26).map(line => {
-    const cols = parseCsvLine(line);
-    const row = Object.fromEntries(headers.map((h, i) => [h, cols[i] ?? ""]));
-    const title = row.original_title || row.title || row.originalTitle || "(untitled)";
-    const topic = row.topic || "";
-    const jurisdiction = row.jurisdiction || "";
-    const status = row.status || "";
-    const score = row.core_score || row.coreScore || "";
-    const summary = row.summary || "";
-    return `${title} | topic=${topic} | jurisdiction=${jurisdiction} | status=${status} | score=${score} | summary=${summary}`;
-  });
+  const tokens = tokenize(inputText);
+  const scored = [];
 
-  return rows.join("\n");
+  for (const line of lines.slice(1, 26)) {
+    if (!line.trim()) continue;
+    const cols = parseCsvLine(line);
+    const row = Object.fromEntries(headers.map((h, i) => [h, cols[i] ?? '']));
+
+    const title = row.original_title || row.title || row.originalTitle || '(untitled)';
+    const topic = row.topic || '';
+    const jurisdiction = row.jurisdiction || '';
+    const status = row.status || '';
+    const score = row.core_score || row.coreScore || '';
+    const summary = row.summary || '';
+
+    const hay = `${title} ${topic} ${jurisdiction} ${status} ${summary}`.toLowerCase();
+    let hit = 0;
+    for (const token of tokens) {
+      if (token && hay.includes(token)) hit += 1;
+    }
+
+    const numeric = Number(String(score).replace(/[^0-9.-]/g, '')) || 0;
+    scored.push({
+      weight: hit * 10 + numeric,
+      text: `${title} | topic=${topic} | jurisdiction=${jurisdiction} | status=${status} | score=${score} | summary=${summary}`
+    });
+  }
+
+  scored.sort((a, b) => b.weight - a.weight);
+  return scored.slice(0, 12).map(x => x.text).join('\n');
 }
 
 function parseCsvLine(line) {
@@ -214,4 +231,13 @@ function html(body) {
   return new Response(body, {
     headers: { "content-type": "text/html; charset=utf-8" },
   });
+}
+
+function tokenize(s) {
+  return String(s || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 3)
+    .slice(0, 20);
 }
