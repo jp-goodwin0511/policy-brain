@@ -411,7 +411,7 @@ function normalizeCorpusText(text, inputText = '') {
     const score = row.core_score || row.coreScore || '';
     const summary = row.summary || '';
 
-    const hay = `${title} ${topic} ${jurisdiction} ${status} ${summary}`.toLowerCase();
+    const hay = (title + ' ' + topic + ' ' + jurisdiction + ' ' + status + ' ' + summary).toLowerCase();
     let hit = 0;
     for (const token of tokens) {
       if (token && hay.includes(token)) hit += 1;
