@@ -7,76 +7,229 @@ export default {
 
     if (url.pathname === "/") {
       return html(`
-        <!doctype html>
-        <html>
-          <head>
-            <meta charset="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title>Policy Brain Copilot</title>
-            <style>
-              body { font-family: system-ui, sans-serif; max-width: 900px; margin: 40px auto; padding: 0 16px; }
-              textarea { width: 100%; min-height: 220px; padding: 12px; font-size: 14px; }
-              select, button, input { font-size: 14px; padding: 10px 12px; }
-              button { margin-right: 8px; }
-              pre { white-space: pre-wrap; background: #f6f8fa; padding: 16px; border-radius: 8px; overflow-x: auto; }
-              .row { margin: 12px 0; }
-            </style>
-          </head>
-          <body>
-            <h1>Policy Brain Copilot</h1>
-            <p>Paste a draft document or legislation, choose a mode, then click Analyze.</p>
-
-            <div class="row">
-              <select id="mode">
-                <option value="draft-review">Draft review</option>
-                <option value="legislation" selected>Legislation / policy analysis</option>
-              </select>
-              <button id="analyze">Analyze</button>
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>Policy Brain Copilot</title>
+      <style>
+        :root {
+          --bg: #0b1020;
+          --panel: #11172a;
+          --text: #edf2ff;
+          --muted: #98a2c7;
+          --accent: #7c8cff;
+          --accent-2: #56c2ff;
+          --border: rgba(255,255,255,0.08);
+        }
+        * { box-sizing: border-box; }
+        body {
+          margin: 0;
+          min-height: 100vh;
+          background: radial-gradient(1200px 800px at 20% 0%, #182041 0%, var(--bg) 55%);
+          color: var(--text);
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 20px 60px; }
+        .hero {
+          display: grid;
+          grid-template-columns: 1.1fr 0.9fr;
+          gap: 20px;
+          margin-bottom: 20px;
+        }
+        .card {
+          background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+          border: 1px solid var(--border);
+          border-radius: 18px;
+          box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+        }
+        .hero-main { padding: 28px; }
+        .eyebrow {
+          color: var(--accent-2);
+          font-weight: 700;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          font-size: 12px;
+        }
+        h1 { margin: 10px 0 12px; font-size: 38px; line-height: 1.05; }
+        .subtitle { color: var(--muted); font-size: 16px; line-height: 1.6; max-width: 60ch; }
+        .status-grid { display: grid; gap: 12px; }
+        .status {
+          padding: 18px;
+          background: rgba(7,10,20,0.35);
+          border: 1px solid var(--border);
+          border-radius: 14px;
+        }
+        .status label {
+          display: block;
+          color: var(--muted);
+          font-size: 12px;
+          margin-bottom: 8px;
+        }
+        .status strong { font-size: 15px; }
+        .panel { padding: 20px; }
+        .row {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          align-items: center;
+          margin: 12px 0;
+        }
+        select, button, input, textarea {
+          background: #0d1324;
+          color: var(--text);
+          border: 1px solid var(--border);
+          border-radius: 12px;
+          padding: 12px 14px;
+          font-size: 14px;
+          outline: none;
+        }
+        textarea {
+          width: 100%;
+          min-height: 240px;
+          resize: vertical;
+          line-height: 1.55;
+        }
+        input { width: 360px; max-width: 100%; }
+        button {
+          background: linear-gradient(135deg, var(--accent), var(--accent-2));
+          border: none;
+          color: #08101f;
+          font-weight: 700;
+          cursor: pointer;
+          padding: 12px 18px;
+          box-shadow: 0 10px 28px rgba(86,194,255,0.18);
+        }
+        button:hover { filter: brightness(1.03); }
+        .hint { color: var(--muted); font-size: 13px; margin-top: 10px; }
+        pre {
+          margin: 0;
+          white-space: pre-wrap;
+          background: #09101f;
+          color: #e8efff;
+          border: 1px solid var(--border);
+          padding: 18px;
+          border-radius: 14px;
+          overflow-x: auto;
+          min-height: 260px;
+          line-height: 1.55;
+        }
+        .output-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin: 0 0 10px;
+        }
+        .pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          border: 1px solid var(--border);
+          background: rgba(255,255,255,0.03);
+          border-radius: 999px;
+          padding: 6px 10px;
+          color: var(--muted);
+          font-size: 12px;
+        }
+        @media (max-width: 900px) {
+          .hero { grid-template-columns: 1fr; }
+          h1 { font-size: 30px; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="wrap">
+        <div class="hero">
+          <div class="card hero-main">
+            <div class="eyebrow">Policy Brain</div>
+            <h1>Policy copilot for draft review and legislation analysis</h1>
+            <div class="subtitle">
+              Paste a draft document or policy text, choose a mode, and get a Cloudflare-style readout grounded in the live corpus.
             </div>
-
-            <div class="row">
-              <textarea id="text" placeholder="Paste a draft document, bill, or consultation here..."></textarea>
+          </div>
+          <div class="card panel status-grid">
+            <div class="status">
+              <label>Status</label>
+              <strong>Live</strong>
             </div>
-
-            <div class="row">
-              <label for="voice">Voice:</label>
-              <input id="voice" value="Alyssa-CLO-public-comment" style="width: 320px;" />
+            <div class="status">
+              <label>Corpus source</label>
+              <strong>R2: Policy Brain - Master Tracker.csv</strong>
             </div>
-
-            <div class="row">
-              <pre id="output">Results will appear here.</pre>
+            <div class="status">
+              <label>Voice</label>
+              <strong>Alyssa-CLO-public-comment</strong>
             </div>
+          </div>
+        </div>
 
-            <script>
-              const analyzeBtn = document.getElementById('analyze');
-              const textEl = document.getElementById('text');
-              const modeEl = document.getElementById('mode');
-              const voiceEl = document.getElementById('voice');
-              const outputEl = document.getElementById('output');
+        <div class="card panel">
+          <div class="row">
+            <select id="mode">
+              <option value="draft-review">Draft review</option>
+              <option value="legislation" selected>Legislation / policy analysis</option>
+            </select>
+            <button id="analyze">Analyze</button>
+          </div>
 
-              analyzeBtn.addEventListener('click', async () => {
-                outputEl.textContent = 'Analyzing...';
-                try {
-                  const res = await fetch('/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      mode: modeEl.value,
-                      text: textEl.value,
-                      voice: voiceEl.value
-                    })
-                  });
+          <div class="row">
+            <textarea id="text" placeholder="Paste a draft document, bill, consultation, or comment here..."></textarea>
+          </div>
 
-                  const data = await res.json();
-                  outputEl.textContent = JSON.stringify(data, null, 2);
-                } catch (err) {
-                  outputEl.textContent = 'Error: ' + err.message;
-                }
-              });
-            </script>
-          </body>
-        </html>
-      `);
+          <div class="row">
+            <label for="voice">Voice:</label>
+            <input id="voice" value="Alyssa-CLO-public-comment" />
+          </div>
+
+          <div class="hint">
+            Tip: use Draft review for redlines/comments on your own writing; use Legislation / policy analysis for stance and comment drafting.
+          </div>
+        </div>
+
+        <div class="card panel" style="margin-top: 20px;">
+          <div class="output-head">
+            <div class="pill">Response</div>
+            <div class="pill" id="loadState">Ready</div>
+          </div>
+          <pre id="output">Results will appear here.</pre>
+        </div>
+      </div>
+
+      <script>
+        const analyzeBtn = document.getElementById('analyze');
+        const textEl = document.getElementById('text');
+        const modeEl = document.getElementById('mode');
+        const voiceEl = document.getElementById('voice');
+        const outputEl = document.getElementById('output');
+        const loadState = document.getElementById('loadState');
+
+        analyzeBtn.addEventListener('click', async () => {
+          outputEl.textContent = 'Analyzing...';
+          loadState.textContent = 'Working';
+          try {
+            const res = await fetch('/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                mode: modeEl.value,
+                text: textEl.value,
+                voice: voiceEl.value
+              })
+            });
+
+            const data = await res.json();
+            outputEl.textContent = JSON.stringify(data, null, 2);
+            loadState.textContent = res.ok ? 'Done' : 'Error';
+          } catch (err) {
+            outputEl.textContent = 'Error: ' + err.message;
+            loadState.textContent = 'Error';
+          }
+        });
+      </script>
+    </body>
+  </html>
+`);
     }
 
     if (url.pathname === "/health") {
