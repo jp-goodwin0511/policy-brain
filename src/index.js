@@ -340,33 +340,31 @@ function escapeHtml(str) {
 }
 
   function splitSections(text) {
-    const matches = String(text || '').match(/\*\*[^*]+\*\*/g);
-    if (!matches) return [['Response', String(text || '')]];
+  const lines = String(text || '').split(/\r?\n/);
+  const sections = [];
+  let currentTitle = 'Response';
+  let currentBody = [];
 
-    const parts = [];
-    let cursor = 0;
-
-    for (const m of matches) {
-      const idx = text.indexOf(m, cursor);
-      const prev = text.slice(cursor, idx).trim();
-      if (prev) parts.push(['Response', prev]);
-
-      const title = m.replace(/^\*\*|\*\*$/g, '').trim().replace(/:$/, '');
-      cursor = idx + m.length;
-
-      const nextIdx = text.slice(cursor).search(/\n\*\*[^*]+\*\*/);
-      const body = nextIdx === -1 ? text.slice(cursor).trim() : text.slice(cursor, cursor + nextIdx).trim();
-      parts.push([title, body]);
-
-      if (nextIdx === -1) return parts;
-      cursor += nextIdx;
+  for (const line of lines) {
+    const heading = line.match(/^\s*\*\*([^*]+)\*\*\s*:?$/);
+    if (heading) {
+      if (currentBody.length) {
+        sections.push([currentTitle, currentBody.join('\n').trim()]);
+      }
+      currentTitle = heading[1].trim();
+      currentBody = [];
+      continue;
     }
 
-    const tail = text.slice(cursor).trim();
-    if (tail) parts.push(['Response', tail]);
-
-    return parts.length ? parts : [['Response', String(text || '')]];
+    currentBody.push(line);
   }
+
+  if (currentBody.length) {
+    sections.push([currentTitle, currentBody.join('\n').trim()]);
+  }
+
+  return sections.length ? sections : [['Response', String(text || '')]];
+}
 
   function escapeHtml(str) {
     return String(str)
