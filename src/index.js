@@ -420,7 +420,7 @@ function normalizeCorpusText(text, inputText = '') {
     const numeric = Number(String(score).replace(/[^0-9.-]/g, '')) || 0;
     scored.push({
       weight: hit * 10 + numeric,
-      text: `${title} | topic=${topic} | jurisdiction=${jurisdiction} | status=${status} | score=${score} | summary=${summary}`
+      text: (title + ' | topic=' + topic + ' | jurisdiction=' + jurisdiction + ' | status=' + status + ' | score=' + score + ' | summary=' + summary)
     });
   }
 
