@@ -197,40 +197,93 @@ export default {
       </div>
 
       <script>
-        const analyzeBtn = document.getElementById('analyze');
-        const textEl = document.getElementById('text');
-        const modeEl = document.getElementById('mode');
-        const voiceEl = document.getElementById('voice');
-        const outputEl = document.getElementById('output');
-        const loadState = document.getElementById('loadState');
+  const analyzeBtn = document.getElementById('analyze');
+  const textEl = document.getElementById('text');
+  const modeEl = document.getElementById('mode');
+  const voiceEl = document.getElementById('voice');
+  const outputEl = document.getElementById('output');
+  const loadState = document.getElementById('loadState');
 
-        analyzeBtn.addEventListener('click', async () => {
-          outputEl.textContent = 'Analyzing...';
-          loadState.textContent = 'Working';
-          try {
-            const res = await fetch('/analyze', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                mode: modeEl.value,
-                text: textEl.value,
-                voice: voiceEl.value
-              })
-            });
+  analyzeBtn.addEventListener('click', async () => {
+    outputEl.textContent = 'Analyzing...';
+    loadState.textContent = 'Working';
+    try {
+      const res = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: modeEl.value,
+          text: textEl.value,
+          voice: voiceEl.value
+        })
+      });
 
-            const data = await res.json();
-            outputEl.textContent = JSON.stringify(data, null, 2);
-            loadState.textContent = res.ok ? 'Done' : 'Error';
-          } catch (err) {
-            outputEl.textContent = 'Error: ' + err.message;
-            loadState.textContent = 'Error';
-          }
-        });
-      </script>
-    </body>
-  </html>
-`);
+      const data = await res.json();
+      outputEl.innerHTML = formatResponse(data);
+      loadState.textContent = res.ok ? 'Done' : 'Error';
+    } catch (err) {
+      outputEl.textContent = 'Error: ' + err.message;
+      loadState.textContent = 'Error';
     }
+  });
+
+  function formatResponse(data) {
+    if (!data) return '<div>No response.</div>';
+    if (data.error) return '<strong>Error:</strong> ' + escapeHtml(String(data.error));
+
+    const output = String(data.output || '');
+    const sections = splitSections(output);
+
+    return sections.map(([title, body]) => {
+      const safeTitle = escapeHtml(title);
+      const safeBody = escapeHtml(body).replace(/\n/g, '<br>');
+      return `
+        <div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+          <div style="font-weight:700; margin-bottom:8px; color:#56c2ff;">${safeTitle}</div>
+          <div style="white-space: normal; line-height: 1.6;">${safeBody}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function splitSections(text) {
+    const matches = String(text || '').match(/\*\*[^*]+\*\*/g);
+    if (!matches) return [['Response', String(text || '')]];
+
+    const parts = [];
+    let cursor = 0;
+
+    for (const m of matches) {
+      const idx = text.indexOf(m, cursor);
+      const prev = text.slice(cursor, idx).trim();
+      if (prev) parts.push(['Response', prev]);
+
+      const title = m.replace(/^\*\*|\*\*$/g, '').trim().replace(/:$/, '');
+      cursor = idx + m.length;
+
+      const nextIdx = text.slice(cursor).search(/\n\*\*[^*]+\*\*/);
+      const body = nextIdx === -1 ? text.slice(cursor).trim() : text.slice(cursor, cursor + nextIdx).trim();
+      parts.push([title, body]);
+
+      if (nextIdx === -1) return parts;
+      cursor += nextIdx;
+    }
+
+    const tail = text.slice(cursor).trim();
+    if (tail) parts.push(['Response', tail]);
+
+    return parts.length ? parts : [['Response', String(text || '')]];
+  }
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+</script>
 
     if (url.pathname === "/health") {
   const corpus = await fetchCorpusFromR2(env);
