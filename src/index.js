@@ -245,6 +245,99 @@ export default {
       `;
     }).join('');
   }
+  function formatResponse(data) {
+  if (!data) return '<div>No response.</div>';
+  if (data.error) return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
+
+  const output = String(data.output || '').trim();
+  if (!output) return '<div>No output.</div>';
+
+  const sections = splitSections(output);
+
+  return sections.map(([title, body]) => {
+    const safeTitle = escapeHtml(title);
+
+    const renderedBody = renderMarkdownish(body);
+
+    return `
+      <div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">
+        <div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">${safeTitle}</div>
+        <div style="line-height: 1.6;">${renderedBody}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function splitSections(text) {
+  const lines = String(text || '').split(/\r?\n/);
+  const sections = [];
+  let currentTitle = 'Response';
+  let currentBody = [];
+
+  for (const line of lines) {
+    const heading = line.match(/^\s*\*\*([^*]+)\*\*\s*:?$/);
+    if (heading) {
+      if (currentBody.length) sections.push([currentTitle, currentBody.join('\n').trim()]);
+      currentTitle = heading[1].trim();
+      currentBody = [];
+      continue;
+    }
+    currentBody.push(line);
+  }
+
+  if (currentBody.length) sections.push([currentTitle, currentBody.join('\n').trim()]);
+  return sections.length ? sections : [['Response', text]];
+}
+
+function renderMarkdownish(text) {
+  const safe = escapeHtml(String(text || ''));
+
+  // bold
+  let html = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+  const lines = html.split(/\r?\n/);
+  let out = [];
+  let inList = false;
+
+  for (const line of lines) {
+    const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+    const numbered = line.match(/^\s*(\d+)\.\s+(.*)$/);
+
+    if (bullet || numbered) {
+      if (!inList) {
+        out.push('<ul style="margin: 10px 0 10px 22px; padding: 0;">');
+        inList = true;
+      }
+      const content = bullet ? bullet[1] : numbered[2];
+      out.push(`<li style="margin: 6px 0;">${content}</li>`);
+      continue;
+    }
+
+    if (inList) {
+      out.push('</ul>');
+      inList = false;
+    }
+
+    if (!line.trim()) {
+      out.push('<div style="height: 10px;"></div>');
+    } else {
+      out.push(`<div style="margin: 6px 0;">${line}</div>`);
+    }
+  }
+
+  if (inList) out.push('</ul>');
+
+  return out.join('');
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
   function splitSections(text) {
     const matches = String(text || '').match(/\*\*[^*]+\*\*/g);
