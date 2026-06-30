@@ -219,103 +219,66 @@ export default {
             });
 
             const data = await res.json();
-            outputEl.innerHTML = formatResponse(data);
+            outputEl.textContent = JSON.stringify(data, null, 2);
             loadState.textContent = res.ok ? 'Done' : 'Error';
           } catch (err) {
             outputEl.textContent = 'Error: ' + err.message;
             loadState.textContent = 'Error';
           }
         });
-
-        function formatResponse(data) {
-          if (!data) return '<div>No response.</div>';
-          if (data.error) {
-            return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
-          }
-
-          const output = String(data.output || '').trim();
-          if (!output) return '<div>No output.</div>';
-
-          return output
-            .split(/\n\s*\n/)
-            .map(function(block) {
-              const lines = block.split(/\r?\n/).filter(Boolean);
-              if (!lines.length) return '';
-              const title = lines[0].replace(/^\*\*|\*\*$/g, '').replace(/:$/, '').trim();
-              const body = lines.slice(1).join('\n').trim();
-        
-              const safeTitle = escapeHtml(title || 'Response');
-              const safeBody = escapeHtml(body)
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>');
-        
-              return '<div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">' +
-                '<div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">' + safeTitle + '</div>' +
-                '<div style="line-height: 1.6;">' + safeBody + '</div>' +
-              '</div>';
-            })
-            .join('');
-          }
-
-                function escapeHtml(str) {
-          return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-        }
       </script>
     </body>
   </html>
 `);
     }
 
-    if (url.pathname === '/health') {
-      const corpus = await fetchCorpusFromR2(env);
-      return json({
-        ok: true,
-        service: 'policy-brain-worker',
-        mode: 'r2',
-        bucket: R2_BUCKET,
-        objectKey: CORPUS_OBJECT_KEY,
-        corpusPreview: corpus.slice(0, 300),
-      });
-    }
+    if (url.pathname === "/health") {
+  const corpus = await fetchCorpusFromR2(env);
+  return json({
+    ok: true,
+    service: "policy-brain-worker",
+    mode: "r2",
+    bucket: R2_BUCKET,
+    objectKey: CORPUS_OBJECT_KEY,
+    corpusPreview: corpus.slice(0, 300)
+  });
+}
 
     if (url.pathname === '/analyze' && request.method === 'POST') {
-      try {
-        const body = await request.json();
-        const mode = body.mode || 'legislation';
-        const inputText = body.text || '';
-        const voice = body.voice || 'Alyssa-CLO-public-comment';
+  try {
+    const body = await request.json();
+    const mode = body.mode || 'legislation';
+    const inputText = body.text || '';
+    const voice = body.voice || 'Alyssa-CLO-public-comment';
 
-        if (!inputText.trim()) {
-          return json({ error: 'Missing text input.' }, 400);
-        }
-
-        const corpusText = await fetchCorpusFromR2(env, inputText);
-        const prompt = buildPrompt({ mode, inputText, voice, corpusText });
-        const response = await env.AI.run('@cf/meta/llama-3.1-8b-instruct-fp8', {
-          prompt,
-          max_tokens: 1400,
-          temperature: 0.3,
-        });
-
-        return json({
-          mode,
-          voice,
-          bucket: R2_BUCKET,
-          objectKey: CORPUS_OBJECT_KEY,
-          corpusPreview: corpusText.slice(0, 300),
-          output: response.response || response,
-        });
-      } catch (err) {
-        return json({ error: err && err.message ? err.message : String(err) }, 500);
-      }
+    if (!inputText.trim()) {
+      return json({ error: 'Missing text input.' }, 400);
     }
 
-    return json({ error: 'Not found' }, 404);
+    const corpusText = await fetchCorpusFromR2(env, inputText);
+    const prompt = buildPrompt({ mode, inputText, voice, corpusText });
+
+    const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
+      prompt,
+      max_tokens: 1200,
+      temperature: 0.3,
+    });
+
+    return json({
+      mode,
+      voice,
+      bucket: R2_BUCKET,
+      objectKey: CORPUS_OBJECT_KEY,
+      corpusPreview: corpusText.slice(0, 300),
+      output: response.response || response,
+    });
+  } catch (err) {
+    return json({
+      error: err && err.message ? err.message : String(err)
+    }, 500);
+  }
+}
+    return json({ error: "Not found" }, 404);
   },
 };
 
