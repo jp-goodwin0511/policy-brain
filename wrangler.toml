@@ -4,3 +4,7 @@ compatibility_date = "2026-06-30"
 
 [ai]
 binding = "AI"
+
+[[r2_buckets]]
+binding = "policy-brain"
+bucket_name = "policy-brain"
