@@ -125,7 +125,7 @@ export default {
 
 async function fetchCorpusFromR2(env) {
   try {
-    const obj = await env[R2_BUCKET].get(CORPUS_OBJECT_KEY);
+    const obj = await env.policy_brain.get(CORPUS_OBJECT_KEY);
     if (!obj) return "";
     const text = await obj.text();
     return normalizeCorpusText(text);
