@@ -455,9 +455,8 @@ function parseCsvLine(line) {
 
 function buildPrompt({ mode, inputText, voice, corpusText }) {
   const corpusBlock = corpusText
-    ? `\n\nRelevant corpus data:\n${corpusText}`
-    : "\n\nRelevant corpus data: (none provided)";
-
+  ? '\n\nRelevant corpus data:\n' + corpusText
+  : '\n\nRelevant corpus data: (none provided)';
   if (mode === "draft-review") {
     return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alyssa would likely say.\n2. List concrete comments she would leave.\n3. Suggest revised wording where appropriate.\n4. Keep the tone measured, policy-grounded, and concise.\n\nDraft text:\n${inputText}${corpusBlock}\n\nReturn:\n- brief assessment\n- bullet comments\n- suggested edits\n- unresolved questions`;
   }
