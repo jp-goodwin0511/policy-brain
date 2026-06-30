@@ -1,0 +1,15 @@
+name = "policy-brain-worker"
+main = "src/index.js"
+compatibility_date = "2026-06-30"
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "policy_brain"
+database_id = "PASTE_D1_DATABASE_ID_HERE"
+
+[[kv_namespaces]]
+binding = "STATE"
+id = "PASTE_KV_NAMESPACE_ID_HERE"
