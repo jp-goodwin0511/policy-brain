@@ -283,7 +283,7 @@ export default {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;');
   }
-</script>
+</script> 
 
     if (url.pathname === "/health") {
   const corpus = await fetchCorpusFromR2(env);
