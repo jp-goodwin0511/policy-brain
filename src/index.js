@@ -197,132 +197,40 @@ export default {
       </div>
 
       <script>
-  const analyzeBtn = document.getElementById('analyze');
-  const textEl = document.getElementById('text');
-  const modeEl = document.getElementById('mode');
-  const voiceEl = document.getElementById('voice');
-  const outputEl = document.getElementById('output');
-  const loadState = document.getElementById('loadState');
+        const analyzeBtn = document.getElementById('analyze');
+        const textEl = document.getElementById('text');
+        const modeEl = document.getElementById('mode');
+        const voiceEl = document.getElementById('voice');
+        const outputEl = document.getElementById('output');
+        const loadState = document.getElementById('loadState');
 
-  analyzeBtn.addEventListener('click', async () => {
-    outputEl.textContent = 'Analyzing...';
-    loadState.textContent = 'Working';
-    try {
-      const res = await fetch('/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: modeEl.value,
-          text: textEl.value,
-          voice: voiceEl.value
-        })
-      });
+        analyzeBtn.addEventListener('click', async () => {
+          outputEl.textContent = 'Analyzing...';
+          loadState.textContent = 'Working';
+          try {
+            const res = await fetch('/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                mode: modeEl.value,
+                text: textEl.value,
+                voice: voiceEl.value
+              })
+            });
 
-      const data = await res.json();
-      outputEl.innerHTML = formatResponse(data);
-      loadState.textContent = res.ok ? 'Done' : 'Error';
-    } catch (err) {
-      outputEl.textContent = 'Error: ' + err.message;
-      loadState.textContent = 'Error';
+            const data = await res.json();
+            outputEl.textContent = JSON.stringify(data, null, 2);
+            loadState.textContent = res.ok ? 'Done' : 'Error';
+          } catch (err) {
+            outputEl.textContent = 'Error: ' + err.message;
+            loadState.textContent = 'Error';
+          }
+        });
+      </script>
+    </body>
+  </html>
+`);
     }
-  });
-
-  function formatResponse(data) {
-    if (!data) return '<div>No response.</div>';
-    if (data.error) return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
-
-    const output = String(data.output || '').trim();
-    if (!output) return '<div>No output.</div>';
-
-    const sections = splitSections(output);
-
-    return sections.map(function(pair) {
-      const title = pair[0];
-      const body = pair[1];
-      const safeTitle = escapeHtml(title);
-      const safeBody = renderMarkdownish(body);
-
-      return '<div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">' +
-        '<div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">' + safeTitle + '</div>' +
-        '<div style="line-height: 1.6;">' + safeBody + '</div>' +
-      '</div>';
-    }).join('');
-  }
-
-  function splitSections(text) {
-    const lines = String(text || '').split(/\r?\n/);
-    const sections = [];
-    let currentTitle = 'Response';
-    let currentBody = [];
-
-    for (const line of lines) {
-      const heading = line.match(/^\s*\*\*([^*]+)\*\*\s*:?$/);
-      if (heading) {
-        if (currentBody.length) {
-          sections.push([currentTitle, currentBody.join('\n').trim()]);
-        }
-        currentTitle = heading[1].trim();
-        currentBody = [];
-        continue;
-      }
-      currentBody.push(line);
-    }
-
-    if (currentBody.length) {
-      sections.push([currentTitle, currentBody.join('\n').trim()]);
-    }
-
-    return sections.length ? sections : [['Response', String(text || '')]];
-  }
-
-  function renderMarkdownish(text) {
-    const safe = escapeHtml(String(text || ''));
-    let html = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    const lines = html.split(/\r?\n/);
-    const out = [];
-    let inList = false;
-
-    for (const line of lines) {
-      const bullet = line.match(/^\s*[-*]\s+(.*)$/);
-      const numbered = line.match(/^\s*(\d+)\.\s+(.*)$/);
-
-      if (bullet || numbered) {
-        if (!inList) {
-          out.push('<ul style="margin: 10px 0 10px 22px; padding: 0;">');
-          inList = true;
-        }
-        const content = bullet ? bullet[1] : numbered[2];
-        out.push('<li style="margin: 6px 0;">' + content + '</li>');
-        continue;
-      }
-
-      if (inList) {
-        out.push('</ul>');
-        inList = false;
-      }
-
-      if (!line.trim()) {
-        out.push('<div style="height: 10px;"></div>');
-      } else {
-        out.push('<div style="margin: 6px 0;">' + line + '</div>');
-      }
-    }
-
-    if (inList) out.push('</ul>');
-
-    return out.join('');
-  }
-
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-</script>
 
     if (url.pathname === "/health") {
   const corpus = await fetchCorpusFromR2(env);
@@ -411,7 +319,7 @@ function normalizeCorpusText(text, inputText = '') {
     const score = row.core_score || row.coreScore || '';
     const summary = row.summary || '';
 
-    const hay = (title + ' ' + topic + ' ' + jurisdiction + ' ' + status + ' ' + summary).toLowerCase();
+    const hay = `${title} ${topic} ${jurisdiction} ${status} ${summary}`.toLowerCase();
     let hit = 0;
     for (const token of tokens) {
       if (token && hay.includes(token)) hit += 1;
@@ -420,7 +328,7 @@ function normalizeCorpusText(text, inputText = '') {
     const numeric = Number(String(score).replace(/[^0-9.-]/g, '')) || 0;
     scored.push({
       weight: hit * 10 + numeric,
-      text: (title + ' | topic=' + topic + ' | jurisdiction=' + jurisdiction + ' | status=' + status + ' | score=' + score + ' | summary=' + summary)
+      text: `${title} | topic=${topic} | jurisdiction=${jurisdiction} | status=${status} | score=${score} | summary=${summary}`
     });
   }
 
@@ -455,39 +363,14 @@ function parseCsvLine(line) {
 
 function buildPrompt({ mode, inputText, voice, corpusText }) {
   const corpusBlock = corpusText
-    ? '\n\nRelevant corpus data:\n' + corpusText
-    : '\n\nRelevant corpus data: (none provided)';
+    ? `\n\nRelevant corpus data:\n${corpusText}`
+    : "\n\nRelevant corpus data: (none provided)";
 
-  if (mode === 'draft-review') {
-    return 'You are a Cloudflare policy copilot. The user provided a draft document.\n\n' +
-      'Write in the voice profile: ' + voice + '.\n\n' +
-      'Task:\n' +
-      '1. Explain what Alyssa would likely say.\n' +
-      '2. List concrete comments she would leave.\n' +
-      '3. Suggest revised wording where appropriate.\n' +
-      '4. Keep the tone measured, policy-grounded, and concise.\n\n' +
-      'Draft text:\n' + inputText + corpusBlock + '\n\n' +
-      'Return:\n' +
-      '- brief assessment\n' +
-      '- bullet comments\n' +
-      '- suggested edits\n' +
-      '- unresolved questions';
+  if (mode === "draft-review") {
+    return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alyssa would likely say.\n2. List concrete comments she would leave.\n3. Suggest revised wording where appropriate.\n4. Keep the tone measured, policy-grounded, and concise.\n\nDraft text:\n${inputText}${corpusBlock}\n\nReturn:\n- brief assessment\n- bullet comments\n- suggested edits\n- unresolved questions`;
   }
 
-  return 'You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\n' +
-    'Write in the voice profile: ' + voice + '.\n\n' +
-    'Task:\n' +
-    '1. Infer Cloudflare\'s likely stance.\n' +
-    '2. Draft a short internal stance memo.\n' +
-    '3. Draft a CLO-style public comment or letter.\n' +
-    '4. Surface unresolved questions for human review.\n' +
-    '5. Use a clear, measured, policy-grounded style.\n\n' +
-    'Policy input:\n' + inputText + corpusBlock + '\n\n' +
-    'Return:\n' +
-    '- stance summary\n' +
-    '- internal memo\n' +
-    '- draft comment\n' +
-    '- open questions';
+  return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's likely stance.\n2. Draft a short internal stance memo.\n3. Draft a CLO-style public comment or letter.\n4. Surface unresolved questions for human review.\n5. Use a clear, measured, policy-grounded style.\n\nPolicy input:\n${inputText}${corpusBlock}\n\nReturn:\n- stance summary\n- internal memo\n- draft comment\n- open questions`;
 }
 
 function json(obj, status = 200) {
