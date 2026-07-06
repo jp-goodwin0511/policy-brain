@@ -197,161 +197,163 @@ export default {
       </div>
 
       <script>
-  const analyzeBtn = document.getElementById('analyze');
-  const textEl = document.getElementById('text');
-  const modeEl = document.getElementById('mode');
-  const voiceEl = document.getElementById('voice');
-  const outputEl = document.getElementById('output');
-  const loadState = document.getElementById('loadState');
+        document.addEventListener('DOMContentLoaded', function() {
+          const analyzeBtn = document.getElementById('analyze');
+          const textEl = document.getElementById('text');
+          const modeEl = document.getElementById('mode');
+          const voiceEl = document.getElementById('voice');
+          const outputEl = document.getElementById('output');
+          const loadState = document.getElementById('loadState');
 
-  analyzeBtn.addEventListener('click', async () => {
-    outputEl.textContent = 'Analyzing...';
-    loadState.textContent = 'Working';
-    try {
-      const res = await fetch('/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: modeEl.value,
-          text: textEl.value,
-          voice: voiceEl.value
-        })
-      });
+          analyzeBtn.addEventListener('click', async () => {
+            outputEl.textContent = 'Analyzing...';
+            loadState.textContent = 'Working';
+            try {
+              const res = await fetch('/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  mode: modeEl.value,
+                  text: textEl.value,
+                  voice: voiceEl.value
+                })
+              });
 
-      const data = await res.json();
-      outputEl.innerHTML = formatResponse(data);
-      loadState.textContent = res.ok ? 'Done' : 'Error';
-    } catch (err) {
-      outputEl.textContent = 'Error: ' + err.message;
-      loadState.textContent = 'Error';
-    }
-  });
+              const data = await res.json();
+              outputEl.innerHTML = formatResponse(data);
+              loadState.textContent = res.ok ? 'Done' : 'Error';
+            } catch (err) {
+              outputEl.textContent = 'Error: ' + err.message;
+              loadState.textContent = 'Error';
+            }
+          });
 
-  function formatResponse(data) {
-    if (!data) return '<div>No response.</div>';
-    if (data.error) {
-      return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
-    }
+          function formatResponse(data) {
+            if (!data) return '<div>No response.</div>';
+            if (data.error) {
+              return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
+            }
 
-    const output = String(data.output || '').trim();
-    if (!output) return '<div>No output.</div>';
+            const output = String(data.output || '').trim();
+            if (!output) return '<div>No output.</div>';
 
-    return output.split(/\n\s*\n/).map(function(block) {
-      const lines = block.split(/\r?\n/).filter(Boolean);
-      if (!lines.length) return '';
+            return output.split(/\n\s*\n/).map(function(block) {
+              const lines = block.split(/\r?\n/).filter(Boolean);
+              if (!lines.length) return '';
 
-      const first = lines[0].trim();
-      const title = first.replace(/^\*\*|\*\*$/g, '').replace(/:$/, '').trim();
-      const body = lines.slice(1).join('\n').trim();
+              const first = lines[0].trim();
+              const title = first.replace(/^\*\*|\*\*$/g, '').replace(/:$/, '').trim();
+              const body = lines.slice(1).join('\n').trim();
 
-      const safeTitle = escapeHtml(title || 'Response');
-      const renderedBody = renderMarkdownish(body);
+              const safeTitle = escapeHtml(title || 'Response');
+              const renderedBody = renderMarkdownish(body);
 
-      return '<div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">' +
-        '<div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">' + safeTitle + '</div>' +
-        '<div style="line-height:1.6;">' + renderedBody + '</div>' +
-      '</div>';
-    }).join('');
-  }
+              return '<div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">' +
+                '<div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">' + safeTitle + '</div>' +
+                '<div style="line-height:1.6;">' + renderedBody + '</div>' +
+              '</div>';
+            }).join('');
+          }
 
-  function renderMarkdownish(text) {
-    const safe = escapeHtml(String(text || ''));
-    let html = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+          function renderMarkdownish(text) {
+            const safe = escapeHtml(String(text || ''));
+            let html = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
-    const lines = html.split(/\r?\n/);
-    const out = [];
-    let inList = false;
+            const lines = html.split(/\r?\n/);
+            const out = [];
+            let inList = false;
 
-    for (const line of lines) {
-      const bullet = line.match(/^\s*[-*]\s+(.*)$/);
-      const numbered = line.match(/^\s*(\d+)\.\s+(.*)$/);
+            for (const line of lines) {
+              const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+              const numbered = line.match(/^\s*(\d+)\.\s+(.*)$/);
 
-      if (bullet || numbered) {
-        if (!inList) {
-          out.push('<ul style="margin: 10px 0 10px 22px; padding: 0;">');
-          inList = true;
-        }
-        const content = bullet ? bullet[1] : numbered[2];
-        out.push('<li style="margin: 6px 0;">' + content + '</li>');
-        continue;
-      }
+              if (bullet || numbered) {
+                if (!inList) {
+                  out.push('<ul style="margin: 10px 0 10px 22px; padding: 0;">');
+                  inList = true;
+                }
+                const content = bullet ? bullet[1] : numbered[2];
+                out.push('<li style="margin: 6px 0;">' + content + '</li>');
+                continue;
+              }
 
-      if (inList) {
-        out.push('</ul>');
-        inList = false;
-      }
+              if (inList) {
+                out.push('</ul>');
+                inList = false;
+              }
 
-      if (!line.trim()) {
-        out.push('<div style="height: 10px;"></div>');
-      } else {
-        out.push('<div style="margin: 6px 0;">' + line + '</div>');
-      }
-    }
+              if (!line.trim()) {
+                out.push('<div style="height: 10px;"></div>');
+              } else {
+                out.push('<div style="margin: 6px 0;">' + line + '</div>');
+              }
+            }
 
-    if (inList) out.push('</ul>');
-    return out.join('');
-  }
+            if (inList) out.push('</ul>');
+            return out.join('');
+          }
 
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-</script>
+          function escapeHtml(str) {
+            return String(str)
+              .replace(/&/g, '&amp;')
+              .replace(/</g, '&lt;')
+              .replace(/>/g, '&gt;')
+              .replace(/"/g, '&quot;')
+              .replace(/'/g, '&#39;');
+          }
+        });
+      </script>
     </body>
   </html>
 `);
     }
 
     if (url.pathname === "/health") {
-  const corpus = await fetchCorpusFromR2(env);
-  return json({
-    ok: true,
-    service: "policy-brain-worker",
-    mode: "r2",
-    bucket: R2_BUCKET,
-    objectKey: CORPUS_OBJECT_KEY,
-    corpusPreview: corpus.slice(0, 300)
-  });
-}
-
-    if (url.pathname === '/analyze' && request.method === 'POST') {
-  try {
-    const body = await request.json();
-    const mode = body.mode || 'legislation';
-    const inputText = body.text || '';
-    const voice = body.voice || 'Alyssa-CLO-public-comment';
-
-    if (!inputText.trim()) {
-      return json({ error: 'Missing text input.' }, 400);
+      const corpus = await fetchCorpusFromR2(env);
+      return json({
+        ok: true,
+        service: "policy-brain-worker",
+        mode: "r2",
+        bucket: R2_BUCKET,
+        objectKey: CORPUS_OBJECT_KEY,
+        corpusPreview: corpus.slice(0, 300)
+      });
     }
 
-    const corpusText = await fetchCorpusFromR2(env, inputText);
-    const prompt = buildPrompt({ mode, inputText, voice, corpusText });
+    if (url.pathname === '/analyze' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const mode = body.mode || 'legislation';
+        const inputText = body.text || '';
+        const voice = body.voice || 'Alyssa-CLO-public-comment';
 
-    const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
-      prompt,
-      max_tokens: 1200,
-      temperature: 0.3,
-    });
+        if (!inputText.trim()) {
+          return json({ error: 'Missing text input.' }, 400);
+        }
 
-    return json({
-      mode,
-      voice,
-      bucket: R2_BUCKET,
-      objectKey: CORPUS_OBJECT_KEY,
-      corpusPreview: corpusText.slice(0, 300),
-      output: response.response || response,
-    });
-  } catch (err) {
-    return json({
-      error: err && err.message ? err.message : String(err)
-    }, 500);
-  }
-}
+        const corpusText = await fetchCorpusFromR2(env, inputText);
+        const prompt = buildPrompt({ mode, inputText, voice, corpusText });
+
+        const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
+          prompt,
+          max_tokens: 1200,
+          temperature: 0.3,
+        });
+
+        return json({
+          mode,
+          voice,
+          bucket: R2_BUCKET,
+          objectKey: CORPUS_OBJECT_KEY,
+          corpusPreview: corpusText.slice(0, 300),
+          output: response.response || response,
+        });
+      } catch (err) {
+        return json({
+          error: err && err.message ? err.message : String(err)
+        }, 500);
+      }
+    }
     return json({ error: "Not found" }, 404);
   },
 };
