@@ -198,123 +198,122 @@ export default {
 
       <script>
   console.log('Script loaded');
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded fired');
 
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('DOMContentLoaded fired');
+    const analyzeBtn = document.getElementById('analyze');
+    const textEl = document.getElementById('text');
+    const modeEl = document.getElementById('mode');
+    const voiceEl = document.getElementById('voice');
+    const outputEl = document.getElementById('output');
+    const loadState = document.getElementById('loadState');
 
-  const analyzeBtn = document.getElementById('analyze');
-  const textEl = document.getElementById('text');
-  const modeEl = document.getElementById('mode');
-  const voiceEl = document.getElementById('voice');
-  const outputEl = document.getElementById('output');
-  const loadState = document.getElementById('loadState');
+    console.log('analyzeBtn:', analyzeBtn);
+    if (!analyzeBtn) {
+      console.error('Button not found!');
+      return;
+    }
 
-  console.log('analyzeBtn:', analyzeBtn);
-  if (!analyzeBtn) {
-    console.error('Button not found!');
-    return;
-  }
+    analyzeBtn.addEventListener('click', async () => {
+      console.log('Analyze clicked');
+      outputEl.textContent = 'Analyzing...';
+      loadState.textContent = 'Working';
+      try {
+        const res = await fetch('/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode: modeEl.value,
+            text: textEl.value,
+            voice: voiceEl.value
+          })
+        });
 
-  analyzeBtn.addEventListener('click', async () => {
-    console.log('Analyze clicked');
-    outputEl.textContent = 'Analyzing...';
-    loadState.textContent = 'Working';
-    try {
-      const res = await fetch('/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: modeEl.value,
-          text: textEl.value,
-          voice: voiceEl.value
-        })
-      });
+        const data = await res.json();
+        console.log('analyze response:', data);
+        outputEl.innerHTML = formatResponse(data);
+        loadState.textContent = res.ok ? 'Done' : 'Error';
+      } catch (err) {
+        console.error('analyze error:', err);
+        outputEl.textContent = 'Error: ' + err.message;
+        loadState.textContent = 'Error';
+      }
+    });
 
-      const data = await res.json();
-      console.log('analyze response:', data);
-      outputEl.innerHTML = formatResponse(data);
-      loadState.textContent = res.ok ? 'Done' : 'Error';
-    } catch (err) {
-      console.error('analyze error:', err);
-      outputEl.textContent = 'Error: ' + err.message;
-      loadState.textContent = 'Error';
+    function formatResponse(data) {
+      if (!data) return '<div>No response.</div>';
+      if (data.error) {
+        return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
+      }
+
+      const output = String(data.output || '').trim();
+      if (!output) return '<div>No output.</div>';
+
+      return output.split(/\n\s*\n/).map(function(block) {
+        const lines = block.split(/\r?\n/).filter(Boolean);
+        if (!lines.length) return '';
+
+        const first = lines[0].trim();
+        const title = first.replace(/^\*\*|\*\*$/g, '').replace(/:$/, '').trim();
+        const body = lines.slice(1).join('\n').trim();
+
+        const safeTitle = escapeHtml(title || 'Response');
+        const renderedBody = renderMarkdownish(body);
+
+        return '<div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">' +
+          '<div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">' + safeTitle + '</div>' +
+          '<div style="line-height:1.6;">' + renderedBody + '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function renderMarkdownish(text) {
+      const safe = escapeHtml(String(text || ''));
+      let html = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+      const lines = html.split(/\r?\n/);
+      const out = [];
+      let inList = false;
+
+      for (const line of lines) {
+        const bullet = line.match(/^\s*[-*]\s+(.*)$/);
+        const numbered = line.match(/^\s*(\d+)\.\s+(.*)$/);
+
+        if (bullet || numbered) {
+          if (!inList) {
+            out.push('<ul style="margin: 10px 0 10px 22px; padding: 0;">');
+            inList = true;
+          }
+          const content = bullet ? bullet[1] : numbered[2];
+          out.push('<li style="margin: 6px 0;">' + content + '</li>');
+          continue;
+        }
+
+        if (inList) {
+          out.push('</ul>');
+          inList = false;
+        }
+
+        if (!line.trim()) {
+          out.push('<div style="height: 10px;"></div>');
+        } else {
+          out.push('<div style="margin: 6px 0;">' + line + '</div>');
+        }
+      }
+
+      if (inList) out.push('</ul>');
+      return out.join('');
+    }
+
+    function escapeHtml(str) {
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
   });
-
-  function formatResponse(data) {
-    if (!data) return '<div>No response.</div>';
-    if (data.error) {
-      return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
-    }
-
-    const output = String(data.output || '').trim();
-    if (!output) return '<div>No output.</div>';
-
-    return output.split(/\n\s*\n/).map(function(block) {
-      const lines = block.split(/\r?\n/).filter(Boolean);
-      if (!lines.length) return '';
-
-      const first = lines[0].trim();
-      const title = first.replace(/^\*\*|\*\*$/g, '').replace(/:$/, '').trim();
-      const body = lines.slice(1).join('\n').trim();
-
-      const safeTitle = escapeHtml(title || 'Response');
-      const renderedBody = renderMarkdownish(body);
-
-      return '<div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">' +
-        '<div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">' + safeTitle + '</div>' +
-        '<div style="line-height:1.6;">' + renderedBody + '</div>' +
-      '</div>';
-    }).join('');
-  }
-
-  function renderMarkdownish(text) {
-    const safe = escapeHtml(String(text || ''));
-    let html = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-    const lines = html.split(/\r?\n/);
-    const out = [];
-    let inList = false;
-
-    for (const line of lines) {
-      const bullet = line.match(/^\s*[-*]\s+(.*)$/);
-      const numbered = line.match(/^\s*(\d+)\.\s+(.*)$/);
-
-      if (bullet || numbered) {
-        if (!inList) {
-          out.push('<ul style="margin: 10px 0 10px 22px; padding: 0;">');
-          inList = true;
-        }
-        const content = bullet ? bullet[1] : numbered[2];
-        out.push('<li style="margin: 6px 0;">' + content + '</li>');
-        continue;
-      }
-
-      if (inList) {
-        out.push('</ul>');
-        inList = false;
-      }
-
-      if (!line.trim()) {
-        out.push('<div style="height: 10px;"></div>');
-      } else {
-        out.push('<div style="margin: 6px 0;">' + line + '</div>');
-      }
-    }
-
-    if (inList) out.push('</ul>');
-    return out.join('');
-  }
-
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-});
       </script>
     </body>
   </html>
@@ -456,10 +455,10 @@ function buildPrompt({ mode, inputText, voice, corpusText }) {
     : "\n\nRelevant corpus data: (none provided)";
 
   if (mode === "draft-review") {
-    return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alyssa would likely say.\n2. List concrete comments and suggestions.\n3. End with a final recommendation.${corpusBlock}\n\nDraft:\n\n${inputText}`;
+    return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alyssa would likely say.\n2. List concrete comme[...]`
   }
 
-  return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's likely position.\n2. List 3–5 key concerns or opportunities.\n3. Draft talking points for a public comment.${corpusBlock}\n\nProposal:\n\n${inputText}`;
+  return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's li[...]`
 }
 
 function json(obj, status = 200) {
