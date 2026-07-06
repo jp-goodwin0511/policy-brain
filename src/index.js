@@ -197,6 +197,16 @@ export default {
       </div>
 
       <script>
+  console.log('Script loaded');
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOMContentLoaded fired');
+    const analyzeBtn = document.getElementById('analyze');
+    console.log('analyzeBtn:', analyzeBtn);
+    
+    if (!analyzeBtn) {
+      console.error('Button not found!');
+      return;
+    }
         document.addEventListener('DOMContentLoaded', function() {
           const analyzeBtn = document.getElementById('analyze');
           const textEl = document.getElementById('text');
