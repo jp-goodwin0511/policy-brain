@@ -441,10 +441,10 @@ function buildPrompt({ mode, inputText, voice, corpusText }) {
     : "\n\nRelevant corpus data: (none provided)";
 
   if (mode === "draft-review") {
-    return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alyssa would likely say.\n2. List concrete comme[...]
+    return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alyssa would likely say.\n2. List concrete comments and suggestions.\n3. End with a final recommendation.${corpusBlock}\n\nDraft:\n\n${inputText}`;
   }
 
-  return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's likely [...]`;
+  return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's likely position.\n2. List 3–5 key concerns or opportunities.\n3. Draft talking points for a public comment.${corpusBlock}\n\nProposal:\n\n${inputText}`;
 }
 
 function json(obj, status = 200) {
