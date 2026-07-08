@@ -198,46 +198,45 @@ export default {
       </div>
 
       <script>
-        const analyzeBtn = document.getElementById('analyze');
-        const textEl = document.getElementById('text');
-        const modeEl = document.getElementById('mode');
-        const voiceEl = document.getElementById('voice');
-        const outputEl = document.getElementById('output');
-        const loadState = document.getElementById('loadState');
+  const analyzeBtn = document.getElementById('analyze');
+  const textEl = document.getElementById('text');
+  const modeEl = document.getElementById('mode');
+  const voiceEl = document.getElementById('voice');
+  const outputEl = document.getElementById('output');
+  const loadState = document.getElementById('loadState');
 
-        
-        analyzeBtn.addEventListener('click', async () => {
-          outputEl.textContent = 'Analyzing...';
-          loadState.textContent = 'Working';
-          try {
-            const res = await fetch('/analyze', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                mode: modeEl.value,
-                text: textEl.value,
-                voice: voiceEl.value
-              })
-            });
+  analyzeBtn.addEventListener('click', async () => {
+    outputEl.textContent = 'Analyzing...';
+    loadState.textContent = 'Working';
+    try {
+      const res = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: modeEl.value,
+          text: textEl.value,
+          voice: voiceEl.value
+        })
+      });
 
-            const data = await res.json();
-            outputEl.innerHTML = '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
-            loadState.textContent = res.ok ? 'Done' : 'Error';
-          } catch (err) {
-            outputEl.textContent = 'Error: ' + err.message;
-            loadState.textContent = 'Error';
-            }
-          });
-          function escapeHtml(str) {
-          return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-        }
+      const data = await res.json();
+      outputEl.innerHTML = '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+      loadState.textContent = res.ok ? 'Done' : 'Error';
+    } catch (err) {
+      outputEl.textContent = 'Error: ' + err.message;
+      loadState.textContent = 'Error';
+    }
+  });
 
-      </script>
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+</script>
     </body>
   </html>
 `);
