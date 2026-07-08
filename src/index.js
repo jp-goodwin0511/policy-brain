@@ -394,6 +394,7 @@ function buildPrompt({ mode, inputText, voice, corpusText }) {
 
     return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's likely stance only if supported by the corpus.\n2. If the corpus does not contain a direct precedent, say so explicitly.\n3. Draft a concise internal stance memo.\n4. Draft a short public comment in Cloudflare's voice.\n5. Surface only the most important unresolved questions.\n6. Avoid overconfident conclusions and avoid legal advice framing.\n\nPolicy input:\n${inputText}${corpusBlock}\n\nReturn:\n- stance summary\n- internal memo\n- draft comment\n- open questions`;
 }
+
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj, null, 2), {
     status,
