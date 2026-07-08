@@ -197,123 +197,35 @@ export default {
       </div>
 
       <script>
-  console.log('Script loaded');
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOMContentLoaded fired');
+        const analyzeBtn = document.getElementById('analyze');
+        const textEl = document.getElementById('text');
+        const modeEl = document.getElementById('mode');
+        const voiceEl = document.getElementById('voice');
+        const outputEl = document.getElementById('output');
+        const loadState = document.getElementById('loadState');
 
-    const analyzeBtn = document.getElementById('analyze');
-    const textEl = document.getElementById('text');
-    const modeEl = document.getElementById('mode');
-    const voiceEl = document.getElementById('voice');
-    const outputEl = document.getElementById('output');
-    const loadState = document.getElementById('loadState');
+        analyzeBtn.addEventListener('click', async () => {
+          outputEl.textContent = 'Analyzing...';
+          loadState.textContent = 'Working';
+          try {
+            const res = await fetch('/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                mode: modeEl.value,
+                text: textEl.value,
+                voice: voiceEl.value
+              })
+            });
 
-    console.log('analyzeBtn:', analyzeBtn);
-    if (!analyzeBtn) {
-      console.error('Button not found!');
-      return;
-    }
-
-    analyzeBtn.addEventListener('click', async () => {
-      console.log('Analyze clicked');
-      outputEl.textContent = 'Analyzing...';
-      loadState.textContent = 'Working';
-      try {
-        const res = await fetch('/analyze', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mode: modeEl.value,
-            text: textEl.value,
-            voice: voiceEl.value
-          })
-        });
-
-        const data = await res.json();
-        console.log('analyze response:', data);
-        outputEl.innerHTML = formatResponse(data);
-        loadState.textContent = res.ok ? 'Done' : 'Error';
-      } catch (err) {
-        console.error('analyze error:', err);
-        outputEl.textContent = 'Error: ' + err.message;
-        loadState.textContent = 'Error';
-      }
-    });
-
-    function formatResponse(data) {
-      if (!data) return '<div>No response.</div>';
-      if (data.error) {
-        return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
-      }
-
-      const output = String(data.output || '').trim();
-      if (!output) return '<div>No output.</div>';
-
-      return output.split(/\n\s*\n/).map(function(block) {
-        const lines = block.split(/\r?\n/).filter(Boolean);
-        if (!lines.length) return '';
-
-        const first = lines[0].trim();
-        const title = first.replace(/^\*\*|\*\*$/g, '').replace(/:$/, '').trim();
-        const body = lines.slice(1).join('\n').trim();
-
-        const safeTitle = escapeHtml(title || 'Response');
-        const renderedBody = renderMarkdownish(body);
-
-        return '<div style="margin: 0 0 16px; padding: 14px 16px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;">' +
-          '<div style="font-weight:700; margin-bottom:10px; color:#56c2ff;">' + safeTitle + '</div>' +
-          '<div style="line-height:1.6;">' + renderedBody + '</div>' +
-        '</div>';
-      }).join('');
-    }
-
-    function renderMarkdownish(text) {
-      const safe = escapeHtml(String(text || ''));
-      let html = safe.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-
-      const lines = html.split(/\r?\n/);
-      const out = [];
-      let inList = false;
-
-      for (const line of lines) {
-        const bullet = line.match(/^\s*[-*]\s+(.*)$/);
-        const numbered = line.match(/^\s*(\d+)\.\s+(.*)$/);
-
-        if (bullet || numbered) {
-          if (!inList) {
-            out.push('<ul style="margin: 10px 0 10px 22px; padding: 0;">');
-            inList = true;
+            const data = await res.json();
+            outputEl.textContent = JSON.stringify(data, null, 2);
+            loadState.textContent = res.ok ? 'Done' : 'Error';
+          } catch (err) {
+            outputEl.textContent = 'Error: ' + err.message;
+            loadState.textContent = 'Error';
           }
-          const content = bullet ? bullet[1] : numbered[2];
-          out.push('<li style="margin: 6px 0;">' + content + '</li>');
-          continue;
-        }
-
-        if (inList) {
-          out.push('</ul>');
-          inList = false;
-        }
-
-        if (!line.trim()) {
-          out.push('<div style="height: 10px;"></div>');
-        } else {
-          out.push('<div style="margin: 6px 0;">' + line + '</div>');
-        }
-      }
-
-      if (inList) out.push('</ul>');
-      return out.join('');
-    }
-
-    function escapeHtml(str) {
-      return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
-    }
-  });
+        });
       </script>
     </body>
   </html>
@@ -321,51 +233,51 @@ export default {
     }
 
     if (url.pathname === "/health") {
-      const corpus = await fetchCorpusFromR2(env);
-      return json({
-        ok: true,
-        service: "policy-brain-worker",
-        mode: "r2",
-        bucket: R2_BUCKET,
-        objectKey: CORPUS_OBJECT_KEY,
-        corpusPreview: corpus.slice(0, 300)
-      });
-    }
+  const corpus = await fetchCorpusFromR2(env);
+  return json({
+    ok: true,
+    service: "policy-brain-worker",
+    mode: "r2",
+    bucket: R2_BUCKET,
+    objectKey: CORPUS_OBJECT_KEY,
+    corpusPreview: corpus.slice(0, 300)
+  });
+}
 
     if (url.pathname === '/analyze' && request.method === 'POST') {
-      try {
-        const body = await request.json();
-        const mode = body.mode || 'legislation';
-        const inputText = body.text || '';
-        const voice = body.voice || 'Alyssa-CLO-public-comment';
+  try {
+    const body = await request.json();
+    const mode = body.mode || 'legislation';
+    const inputText = body.text || '';
+    const voice = body.voice || 'Alyssa-CLO-public-comment';
 
-        if (!inputText.trim()) {
-          return json({ error: 'Missing text input.' }, 400);
-        }
-
-        const corpusText = await fetchCorpusFromR2(env, inputText);
-        const prompt = buildPrompt({ mode, inputText, voice, corpusText });
-
-        const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
-          prompt,
-          max_tokens: 1200,
-          temperature: 0.3,
-        });
-
-        return json({
-          mode,
-          voice,
-          bucket: R2_BUCKET,
-          objectKey: CORPUS_OBJECT_KEY,
-          corpusPreview: corpusText.slice(0, 300),
-          output: response.response || response,
-        });
-      } catch (err) {
-        return json({
-          error: err && err.message ? err.message : String(err)
-        }, 500);
-      }
+    if (!inputText.trim()) {
+      return json({ error: 'Missing text input.' }, 400);
     }
+
+    const corpusText = await fetchCorpusFromR2(env, inputText);
+    const prompt = buildPrompt({ mode, inputText, voice, corpusText });
+
+    const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
+      prompt,
+      max_tokens: 1200,
+      temperature: 0.3,
+    });
+
+    return json({
+      mode,
+      voice,
+      bucket: R2_BUCKET,
+      objectKey: CORPUS_OBJECT_KEY,
+      corpusPreview: corpusText.slice(0, 300),
+      output: response.response || response,
+    });
+  } catch (err) {
+    return json({
+      error: err && err.message ? err.message : String(err)
+    }, 500);
+  }
+}
     return json({ error: "Not found" }, 404);
   },
 };
@@ -455,10 +367,10 @@ function buildPrompt({ mode, inputText, voice, corpusText }) {
     : "\n\nRelevant corpus data: (none provided)";
 
   if (mode === "draft-review") {
-    return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alyssa would likely say.\n2. List concrete comme[...]`
+    return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alyssa would likely say.\n2. List concrete comments she would leave.\n3. Suggest revised wording where appropriate.\n4. Keep the tone measured, policy-grounded, and concise.\n\nDraft text:\n${inputText}${corpusBlock}\n\nReturn:\n- brief assessment\n- bullet comments\n- suggested edits\n- unresolved questions`;
   }
 
-  return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's li[...]`
+  return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's likely stance.\n2. Draft a short internal stance memo.\n3. Draft a CLO-style public comment or letter.\n4. Surface unresolved questions for human review.\n5. Use a clear, measured, policy-grounded style.\n\nPolicy input:\n${inputText}${corpusBlock}\n\nReturn:\n- stance summary\n- internal memo\n- draft comment\n- open questions`;
 }
 
 function json(obj, status = 200) {
