@@ -220,13 +220,34 @@ export default {
             });
 
             const data = await res.json();
-            outputEl.textContent = JSON.stringify(data, null, 2);
+            outputEl.innerHTML = '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
             loadState.textContent = res.ok ? 'Done' : 'Error';
           } catch (err) {
             outputEl.textContent = 'Error: ' + err.message;
             loadState.textContent = 'Error';
           }
         });
+         analyzeBtn.addEventListener('click', async () => {
+          outputEl.textContent = 'Analyzing...';
+          loadState.textContent = 'Working';
+          try {
+            const res = await fetch('/analyze', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                mode: modeEl.value,
+                text: textEl.value,
+                voice: voiceEl.value
+              })
+            });
+
+            const data = await res.json();
+            outputEl.innerHTML = '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+            loadState.textContent = res.ok ? 'Done' : 'Error';
+          } catch (err) {
+            outputEl.textContent = 'Error: ' + err.message;
+            loadState.textContent = 'Error';
+            }
       </script>
     </body>
   </html>
