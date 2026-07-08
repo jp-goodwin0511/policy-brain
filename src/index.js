@@ -1,5 +1,6 @@
 const R2_BUCKET = "policy_brain";
 const CORPUS_OBJECT_KEY = "Policy Brain - Master Tracker.csv";
+const BUILD_VERSION = "2026-07-08-baseline";
 
 export default {
   async fetch(request, env) {
