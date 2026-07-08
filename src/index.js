@@ -320,31 +320,42 @@ function normalizeCorpusText(text, inputText = '') {
 
   for (const line of lines.slice(1, 26)) {
     if (!line.trim()) continue;
+
     const cols = parseCsvLine(line);
     const row = Object.fromEntries(headers.map((h, i) => [h, cols[i] ?? '']));
 
-    const title = row.original_title || row.title || row.originalTitle || '(untitled)';
-    const topic = row.topic || '';
-    const jurisdiction = row.jurisdiction || '';
-    const status = row.status || '';
-    const score = row.core_score || row.coreScore || '';
-    const summary = row.summary || '';
+    const title = String(row.original_title || row.title || row.originalTitle || '(untitled)').trim();
+    const topic = String(row.topic || '').trim();
+    const jurisdiction = String(row.jurisdiction || '').trim();
+    const status = String(row.status || '').trim();
+    const score = String(row.core_score || row.coreScore || '').trim();
+    const summary = String(row.summary || '').trim();
 
-    const hay = `${title} ${topic} ${jurisdiction} ${status} ${summary}`.toLowerCase();
+    const titleLower = title.toLowerCase();
+    const scoreNum = Number(String(score).replace(/[^0-9.-]/g, '')) || 0;
+
+    // Drop low-signal rows
+    if (scoreNum < 5) continue;
+    if (titleLower.includes('buildathon')) continue;
+    if (titleLower.includes('party')) continue;
+    if (titleLower.includes('overview')) continue;
+    if (titleLower.includes('one page')) continue;
+    if (!summary && scoreNum < 7) continue;
+
+    const hay = (title + ' ' + topic + ' ' + jurisdiction + ' ' + status + ' ' + summary).toLowerCase();
     let hit = 0;
     for (const token of tokens) {
       if (token && hay.includes(token)) hit += 1;
     }
 
-    const numeric = Number(String(score).replace(/[^0-9.-]/g, '')) || 0;
     scored.push({
-      weight: hit * 10 + numeric,
-      text: `${title} | topic=${topic} | jurisdiction=${jurisdiction} | status=${status} | score=${score} | summary=${summary}`
+      weight: hit * 10 + scoreNum,
+      text: title + ' | topic=' + topic + ' | jurisdiction=' + jurisdiction + ' | status=' + status + ' | score=' + score + ' | summary=' + summary
     });
   }
 
   scored.sort((a, b) => b.weight - a.weight);
-  return scored.slice(0, 12).map(x => x.text).join('\n');
+  return scored.slice(0, 6).map(x => x.text).join('\n');
 }
 
 function parseCsvLine(line) {
