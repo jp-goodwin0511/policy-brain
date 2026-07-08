@@ -238,6 +238,7 @@ export default {
   return json({
     ok: true,
     service: "policy-brain-worker",
+    build: BUILD_VERSION,
     mode: "r2",
     bucket: R2_BUCKET,
     objectKey: CORPUS_OBJECT_KEY,
