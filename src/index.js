@@ -255,40 +255,40 @@ export default {
   });
 }
 
-    if (url.pathname === '/analyze' && request.method === 'POST') {
-  try {
-    const body = await request.json();
-    const mode = body.mode || 'legislation';
-    const inputText = body.text || '';
-    const voice = body.voice || 'Alyssa-CLO-public-comment';
+        if (url.pathname === '/analyze' && request.method === 'POST') {
+      try {
+        const body = await request.json();
+        const mode = body.mode || 'legislation';
+        const inputText = body.text || '';
+        const voice = body.voice || 'Alyssa-CLO-public-comment';
 
-    if (!inputText.trim()) {
-      return json({ error: 'Missing text input.' }, 400);
+        if (!inputText.trim()) {
+          return json({ error: 'Missing text input.' }, 400);
+        }
+
+        const corpusText = await fetchCorpusFromR2(env, inputText);
+        const prompt = buildPrompt({ mode, inputText, voice, corpusText });
+
+        const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
+          prompt,
+          max_tokens: 1200,
+          temperature: 0.3,
+        });
+
+        return json({
+          mode,
+          voice,
+          bucket: R2_BUCKET,
+          objectKey: CORPUS_OBJECT_KEY,
+          corpusPreview: corpusText.slice(0, 300),
+          output: response.response || response,
+        });
+      } catch (err) {
+        return json({
+          error: err && err.message ? err.message : String(err)
+        }, 500);
+      }
     }
-
-    const corpusText = await fetchCorpusFromR2(env, inputText);
-    const prompt = buildPrompt({ mode, inputText, voice, corpusText });
-
-    const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
-      prompt,
-      max_tokens: 1200,
-      temperature: 0.3,
-    });
-
-    return json({
-      mode,
-      voice,
-      bucket: R2_BUCKET,
-      objectKey: CORPUS_OBJECT_KEY,
-      corpusPreview: corpusText.slice(0, 300),
-      output: response.response || response,
-    });
-  } catch (err) {
-    return json({
-      error: err && err.message ? err.message : String(err)
-    }, 500);
-  }
-}
     return json({ error: "Not found" }, 404);
   },
 };
