@@ -181,6 +181,7 @@ export default {
           <div class="row">
             <label for="billFile">Upload bill text:</label>
             <input type="file" id="billFile" accept=".txt,.md,.text">
+ 	<span id="billStatus" class="hint" style="margin-left:8px;"></span>
           </div>
 
 
@@ -212,11 +213,20 @@ const outputEl = document.getElementById('output');
 const loadState = document.getElementById('loadState');
 
 const billFile = document.getElementById('billFile');
+const billStatus = document.getElementById('billStatus');
+let uploadedBillText = '';
+let uploadedBillName = '';
 
 billFile.addEventListener('change', async () => {
   const file = billFile.files && billFile.files[0];
   if (!file) return;
-  textEl.value = await file.text();
+
+  uploadedBillName = file.name;
+  uploadedBillText = await file.text();
+
+  if (billStatus) {
+    billStatus.textContent = `Loaded ${uploadedBillName} ✓`;
+  }
 });
 
 analyzeBtn.addEventListener('click', async () => {
@@ -229,9 +239,20 @@ analyzeBtn.addEventListener('click', async () => {
       body: JSON.stringify({
         mode: modeEl.value,
         text: textEl.value,
-        voice: voiceEl.value
+        voice: voiceEl.value,
+        document: uploadedBillText,
+        documentName: uploadedBillName
       })
     });
+
+    const data = await res.json();
+    outputEl.innerHTML = formatResponse(data);
+    loadState.textContent = res.ok ? 'Done' : 'Error';
+  } catch (err) {
+    outputEl.textContent = 'Error: ' + err.message;
+    loadState.textContent = 'Error';
+  }
+});
 
     const data = await res.json();
     outputEl.innerHTML = formatResponse(data);
@@ -287,14 +308,17 @@ function escapeHtml(str) {
         const body = await request.json();
         const mode = body.mode || 'legislation';
         const inputText = body.text || '';
+        const documentText = body.document || '';
+        const documentName = body.documentName || '';
         const voice = body.voice || 'Alyssa-CLO-public-comment';
+
 
         if (!inputText.trim()) {
           return json({ error: 'Missing text input.' }, 400);
         }
 
         const corpusText = await fetchCorpusFromR2(env, inputText);
-        const prompt = buildPrompt({ mode, inputText, voice, corpusText });
+        const prompt = buildPrompt({ mode, inputText, voice, corpusText, documentText, documentName });
 
         const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
           prompt,
@@ -443,4 +467,6 @@ function tokenize(s) {
     .filter(w => w.length > 3)
     .slice(0, 20);
 }
+
+
 
