@@ -254,14 +254,6 @@ function formatResponse(data) {
   '</div>';
 }
 
-  const output = String(data.output || '').trim();
-  if (!output) return '<div>No output.</div>';
-
-  return '<div style="white-space: pre-wrap; background: #09101f; color: #e8efff; border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 14px; margin: 0;">' +
-    escapeHtml(output) +
-  '</div>';
-}
-
 function escapeHtml(str) {
   return String(str)
     .replace(/&/g, '&amp;')
