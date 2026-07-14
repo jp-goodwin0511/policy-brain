@@ -1,7 +1,8 @@
 const R2_BUCKET = "policy_brain";
 const CORPUS_OBJECT_KEY = "Policy Brain - Master Tracker.csv";
 const BUILD_VERSION = "2026-07-08-baseline";
-import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
+
+import * as pdfjsLib from 'pdfjs-dist';
 
 export default {
   async fetch(request, env) {
