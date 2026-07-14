@@ -14,7 +14,6 @@ export default {
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>Policy Brain Copilot</title>
-      </script>
 
       <style>
         :root {
@@ -182,7 +181,7 @@ export default {
 
           <div class="row">
             <label for="billFile">Upload bill text:</label>
-            <input type="file" id="billFile" accept=".txt,.md,.text, .pdf">
+            <input type="file" id="billFile" accept=".txt,.md,.text,.pdf">
  	          <span id="billStatus" class="hint" style="margin-left:8px;"></span>
           </div>
 
@@ -243,8 +242,8 @@ analyzeBtn.addEventListener('click', async () => {
     form.append('voice', voiceEl.value);
 
     if (billFile.files && billFile.files[0]) {
-  form.append('document', billFile.files[0]);
-  form.append('documentName', billFile.files[0].name);
+      form.append('document', billFile.files[0]);
+      form.append('documentName', billFile.files[0].name);
 }
 
     const res = await fetch('/analyze', {
