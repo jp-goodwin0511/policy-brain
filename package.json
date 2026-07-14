@@ -8,7 +8,7 @@
     "dev": "wrangler dev"
   },
   "dependencies": {
-    "pdfjs-dist": "^6.1.200"
+    "unpdf": "^0.12.0"
   },
   "devDependencies": {
     "wrangler": "^3.114.0"
