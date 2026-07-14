@@ -2,7 +2,7 @@ const R2_BUCKET = "policy_brain";
 const CORPUS_OBJECT_KEY = "Policy Brain - Master Tracker.csv";
 const BUILD_VERSION = "2026-07-08-baseline";
 
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
+import { extractText } from 'unpdf';
 
 export default {
   async fetch(request, env) {
@@ -332,7 +332,8 @@ if (documentFile instanceof File) {
     documentFile.name.toLowerCase().endsWith('.md') ||
     documentFile.name.toLowerCase().endsWith('.text')
   ) {
-    documentText = await documentFile.text();
+    const buffer = await documentFile.arrayBuffer();
+    documentText = await extractText(buffer);
   } else if (documentFile.name.toLowerCase().endsWith('.pdf')) {
     documentText = await extractPdfText(documentFile);
   } else {
@@ -488,19 +489,6 @@ function html(body) {
   return new Response(body, {
     headers: { "content-type": "text/html; charset=utf-8" },
   });
-}
-
-
-async function extractPdfText(file) {
-  const arrayBuffer = await file.arrayBuffer();
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true }).promise;
-  let text = '';
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    text += content.items.map(item => item.str).join(' ') + '\n';
-  }
-  return text.trim();
 }
 
 function tokenize(s) {
