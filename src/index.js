@@ -198,53 +198,59 @@ export default {
       </div>
 
       <script>
-  const analyzeBtn = document.getElementById('analyze');
-  const textEl = document.getElementById('text');
-  const modeEl = document.getElementById('mode');
-  const voiceEl = document.getElementById('voice');
-  const outputEl = document.getElementById('output');
-  const loadState = document.getElementById('loadState');
+const analyzeBtn = document.getElementById('analyze');
+const textEl = document.getElementById('text');
+const modeEl = document.getElementById('mode');
+const voiceEl = document.getElementById('voice');
+const outputEl = document.getElementById('output');
+const loadState = document.getElementById('loadState');
 
-  analyzeBtn.addEventListener('click', async () => {
-    outputEl.textContent = 'Analyzing...';
-    loadState.textContent = 'Working';
-    try {
-      const res = await fetch('/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          mode: modeEl.value,
-          text: textEl.value,
-          voice: voiceEl.value
-        })
-      });
+analyzeBtn.addEventListener('click', async () => {
+  outputEl.textContent = 'Analyzing...';
+  loadState.textContent = 'Working';
+  try {
+    const res = await fetch('/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        mode: modeEl.value,
+        text: textEl.value,
+        voice: voiceEl.value
+      })
+    });
 
-      const data = await res.json();
-      outputEl.innerHTML = formatResponse(data);
-      loadState.textContent = res.ok ? 'Done' : 'Error';
-    } catch (err) {
-      outputEl.textContent = 'Error: ' + err.message;
-      loadState.textContent = 'Error';
-    }
-  });
+    const data = await res.json();
+    outputEl.innerHTML = formatResponse(data);
+    loadState.textContent = res.ok ? 'Done' : 'Error';
+  } catch (err) {
+    outputEl.textContent = 'Error: ' + err.message;
+    loadState.textContent = 'Error';
+  }
+});
 
 function formatResponse(data) {
   if (!data) return '<div>No response.</div>';
-  if (data.error) return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
+  if (data.error) {
+    return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
+  }
 
-  return '<pre style="white-space: pre-wrap; background: #09101f; color: #e8efff; border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 14px; margin: 0;">' +
-    escapeHtml(JSON.stringify(data, null, 2)) +
-  '</pre>';
+  const output = String(data.output || '').trim();
+  if (!output) return '<div>No output.</div>';
+
+  return '<div style="white-space: pre-wrap; background: #09101f; color: #e8efff; border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 14px; margin: 0;">' +
+    escapeHtml(output) +
+  '</div>';
 }
 
-  function escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 </script>
     </body>
   </html>
