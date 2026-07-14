@@ -225,7 +225,7 @@ billFile.addEventListener('change', async () => {
   uploadedBillText = await file.text();
 
   if (billStatus) {
-    billStatus.textContent = `Loaded ${uploadedBillName} ✓`;
+    billStatus.textContent = 'Loaded ' + uploadedBillName + ' ✓';
   }
 });
 
