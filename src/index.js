@@ -230,9 +230,15 @@ analyzeBtn.addEventListener('click', async () => {
 
 function formatResponse(data) {
   if (!data) return '<div>No response.</div>';
-  if (data.error) {
-    return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
-  }
+  if (data.error) return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
+
+  const output = String(data.output || '').trim();
+  if (!output) return '<div>No output.</div>';
+
+  return '<div style="white-space: pre-wrap; background: #09101f; color: #e8efff; border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 14px; margin: 0;">' +
+    escapeHtml(output) +
+  '</div>';
+}
 
   const output = String(data.output || '').trim();
   if (!output) return '<div>No output.</div>';
