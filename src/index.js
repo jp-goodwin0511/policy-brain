@@ -14,10 +14,6 @@ export default {
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>Policy Brain Copilot</title>
-
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.js"></script>
-      <script>
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.js';
       </script>
 
       <style>
@@ -225,32 +221,12 @@ const billStatus = document.getElementById('billStatus');
 let uploadedBillText = '';
 let uploadedBillName = '';
 
-async function extractPdfText(file) {
-  const arrayBuffer = await file.arrayBuffer();
-
-  if (!window.pdfjsLib) {
-    throw new Error('PDF library not loaded.');
-  }
-
-  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  let text = '';
-
-  for (let i = 1; i <= pdf.numPages; i++) {
-    const page = await pdf.getPage(i);
-    const content = await page.getTextContent();
-    const pageText = content.items.map(item => item.str).join(' ');
-    text += pageText + '\n';
-  }
-
-  return text.trim();
-}
-
 billFile.addEventListener('change', async () => {
   const file = billFile.files && billFile.files[0];
   if (!file) return;
 
   uploadedBillName = file.name;
-  uploadedBillText = await file.text();
+  uploadedBillText = '';
 
   if (billStatus) {
     billStatus.textContent = 'Loaded ' + uploadedBillName + ' ✓';
@@ -266,9 +242,9 @@ analyzeBtn.addEventListener('click', async () => {
     form.append('text', textEl.value);
     form.append('voice', voiceEl.value);
 
-    if (uploadedBillText) {
-  form.append('documentText', uploadedBillText);
-  form.append('documentName', uploadedBillName);
+    if (billFile.files && billFile.files[0]) {
+  form.append('document', billFile.files[0]);
+  form.append('documentName', billFile.files[0].name);
 }
 
     const res = await fetch('/analyze', {
@@ -345,20 +321,23 @@ const inputText = form.get('text') || '';
 const voice = form.get('voice') || 'Alyssa-CLO-public-comment';
 const documentFile = form.get('document');
 const documentName = form.get('documentName') || '';
-let documentText = form.get('documentText') || '';
 
-    if (documentFile instanceof File) {
-      if (
-        documentFile.type === 'text/plain' ||
-        documentFile.name.toLowerCase().endsWith('.txt') ||
-        documentFile.name.toLowerCase().endsWith('.md') ||
-        documentFile.name.toLowerCase().endsWith('.text')
-      ) {
-        documentText = await documentFile.text();
-      } else if (documentFile.name.toLowerCase().endsWith('.pdf')) {
-        return json({ error: 'PDF extraction is not wired yet.' }, 400);
-      }
-    }
+let documentText = '';
+
+if (documentFile instanceof File) {
+  if (
+    documentFile.type === 'text/plain' ||
+    documentFile.name.toLowerCase().endsWith('.txt') ||
+    documentFile.name.toLowerCase().endsWith('.md') ||
+    documentFile.name.toLowerCase().endsWith('.text')
+  ) {
+    documentText = await documentFile.text();
+  } else if (documentFile.name.toLowerCase().endsWith('.pdf')) {
+    return json({ error: 'PDF extraction not wired yet.' }, 400);
+  } else {
+    return json({ error: 'Unsupported file type.' }, 400);
+  }
+}
 
     if (!inputText.trim()) {
       return json({ error: 'Missing text input.' }, 400);
