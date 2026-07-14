@@ -254,15 +254,6 @@ analyzeBtn.addEventListener('click', async () => {
   }
 });
 
-    const data = await res.json();
-    outputEl.innerHTML = formatResponse(data);
-    loadState.textContent = res.ok ? 'Done' : 'Error';
-  } catch (err) {
-    outputEl.textContent = 'Error: ' + err.message;
-    loadState.textContent = 'Error';
-  }
-});
-
 function formatResponse(data) {
   if (!data) return '<div>No response.</div>';
   if (data.error) return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
