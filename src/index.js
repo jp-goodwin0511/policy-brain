@@ -2,7 +2,7 @@ const R2_BUCKET = "policy_brain";
 const CORPUS_OBJECT_KEY = "Policy Brain - Master Tracker.csv";
 const BUILD_VERSION = "2026-07-08-baseline";
 
-import * as pdfjsLib from 'pdfjs-dist';
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 
 export default {
   async fetch(request, env) {
@@ -334,19 +334,7 @@ if (documentFile instanceof File) {
   ) {
     documentText = await documentFile.text();
   } else if (documentFile.name.toLowerCase().endsWith('.pdf')) {
-  try {
-    const arrayBuffer = await documentFile.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let text = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      text += content.items.map(item => item.str).join(' ') + '\n';
-    }
-    documentText = text.trim();
-  } catch (err) {
-    return json({ error: 'Failed to extract PDF text: ' + err.message }, 500);
-  }
+    documentText = await extractPdfText(documentFile);
   } else {
     return json({ error: 'Unsupported file type.' }, 400);
   }
@@ -502,6 +490,19 @@ function html(body) {
   });
 }
 
+
+async function extractPdfText(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, disableWorker: true }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    text += content.items.map(item => item.str).join(' ') + '\n';
+  }
+  return text.trim();
+}
+
 function tokenize(s) {
   return String(s || '')
     .toLowerCase()
@@ -510,6 +511,3 @@ function tokenize(s) {
     .filter(w => w.length > 3)
     .slice(0, 20);
 }
-
-
-
