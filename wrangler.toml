@@ -8,4 +8,3 @@ binding = "AI"
 [[r2_buckets]]
 binding = "policy_brain"
 bucket_name = "policy-brain"
-
