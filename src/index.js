@@ -181,7 +181,7 @@ export default {
           <div class="row">
             <label for="billFile">Upload bill text:</label>
             <input type="file" id="billFile" accept=".txt,.md,.text">
- 	<span id="billStatus" class="hint" style="margin-left:8px;"></span>
+ 	          <span id="billStatus" class="hint" style="margin-left:8px;"></span>
           </div>
 
 
