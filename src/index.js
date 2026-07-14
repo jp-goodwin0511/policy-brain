@@ -199,6 +199,7 @@ export default {
           <div class="output-head">
             <div class="pill">Response</div>
             <div class="pill" id="loadState">Ready</div>
+            <button id="copyResponse" type="button">Copy response</button>
           </div>
           <pre id="output">Results will appear here.</pre>
         </div>
@@ -211,6 +212,7 @@ const modeEl = document.getElementById('mode');
 const voiceEl = document.getElementById('voice');
 const outputEl = document.getElementById('output');
 const loadState = document.getElementById('loadState');
+const copyResponseBtn = document.getElementById('copyResponse');
 
 const billFile = document.getElementById('billFile');
 const billStatus = document.getElementById('billStatus');
@@ -251,6 +253,18 @@ analyzeBtn.addEventListener('click', async () => {
   } catch (err) {
     outputEl.textContent = 'Error: ' + err.message;
     loadState.textContent = 'Error';
+  }
+});
+
+copyResponseBtn.addEventListener('click', async () => {
+  const text = outputEl.innerText || '';
+  try {
+    await navigator.clipboard.writeText(text);
+    const old = copyResponseBtn.textContent;
+    copyResponseBtn.textContent = 'Copied!';
+    setTimeout(() => copyResponseBtn.textContent = old, 1200);
+  } catch (err) {
+    alert('Could not copy response: ' + err.message);
   }
 });
 
