@@ -179,6 +179,12 @@ export default {
           </div>
 
           <div class="row">
+            <label for="billFile">Upload bill text:</label>
+            <input type="file" id="billFile" accept=".txt,.md,.text">
+          </div>
+
+
+          <div class="row">
             <label for="voice">Voice:</label>
             <input id="voice" value="Alyssa-CLO-public-comment" />
           </div>
@@ -204,6 +210,14 @@ const modeEl = document.getElementById('mode');
 const voiceEl = document.getElementById('voice');
 const outputEl = document.getElementById('output');
 const loadState = document.getElementById('loadState');
+
+const billFile = document.getElementById('billFile');
+
+billFile.addEventListener('change', async () => {
+  const file = billFile.files && billFile.files[0];
+  if (!file) return;
+  textEl.value = await file.text();
+});
 
 analyzeBtn.addEventListener('click', async () => {
   outputEl.textContent = 'Analyzing...';
