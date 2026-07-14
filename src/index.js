@@ -1,6 +1,7 @@
 const R2_BUCKET = "policy_brain";
 const CORPUS_OBJECT_KEY = "Policy Brain - Master Tracker.csv";
 const BUILD_VERSION = "2026-07-08-baseline";
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 export default {
   async fetch(request, env) {
@@ -332,7 +333,19 @@ if (documentFile instanceof File) {
   ) {
     documentText = await documentFile.text();
   } else if (documentFile.name.toLowerCase().endsWith('.pdf')) {
-    return json({ error: 'PDF extraction not wired yet.' }, 400);
+  try {
+    const arrayBuffer = await documentFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let text = '';
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      text += content.items.map(item => item.str).join(' ') + '\n';
+    }
+    documentText = text.trim();
+  } catch (err) {
+    return json({ error: 'Failed to extract PDF text: ' + err.message }, 500);
+  }
   } else {
     return json({ error: 'Unsupported file type.' }, 400);
   }
