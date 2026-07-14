@@ -14,6 +14,12 @@ export default {
       <meta charset="utf-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1" />
       <title>Policy Brain Copilot</title>
+
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.js"></script>
+      <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.js';
+      </script>
+
       <style>
         :root {
           --bg: #0b1020;
@@ -180,7 +186,7 @@ export default {
 
           <div class="row">
             <label for="billFile">Upload bill text:</label>
-            <input type="file" id="billFile" accept=".txt,.md,.text">
+            <input type="file" id="billFile" accept=".txt,.md,.text, .pdf">
  	          <span id="billStatus" class="hint" style="margin-left:8px;"></span>
           </div>
 
@@ -219,12 +225,37 @@ const billStatus = document.getElementById('billStatus');
 let uploadedBillText = '';
 let uploadedBillName = '';
 
+async function extractPdfText(file) {
+  const arrayBuffer = await file.arrayBuffer();
+
+  if (!window.pdfjsLib) {
+    throw new Error('PDF library not loaded.');
+  }
+
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let text = '';
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(item => item.str).join(' ');
+    text += pageText + '\n';
+  }
+
+  return text.trim();
+}
+
 billFile.addEventListener('change', async () => {
   const file = billFile.files && billFile.files[0];
   if (!file) return;
 
   uploadedBillName = file.name;
-  uploadedBillText = await file.text();
+
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+    uploadedBillText = await extractPdfText(file);
+  } else {
+    uploadedBillText = await file.text();
+  }
 
   if (billStatus) {
     billStatus.textContent = 'Loaded ' + uploadedBillName + ' ✓';
