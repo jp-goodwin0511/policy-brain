@@ -343,10 +343,9 @@ if (url.pathname === '/analyze' && request.method === 'POST') {
 const mode = form.get('mode') || 'legislation';
 const inputText = form.get('text') || '';
 const voice = form.get('voice') || 'Alyssa-CLO-public-comment';
-const documentText = form.get('documentText') || '';
+const documentFile = form.get('document');
 const documentName = form.get('documentName') || '';
-
-    let documentText = '';
+let documentText = form.get('documentText') || '';
 
     if (documentFile instanceof File) {
       if (
