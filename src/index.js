@@ -220,13 +220,22 @@ export default {
       });
 
       const data = await res.json();
-      outputEl.innerHTML = '<pre>' + escapeHtml(JSON.stringify(data, null, 2)) + '</pre>';
+      outputEl.innerHTML = formatResponse(data);
       loadState.textContent = res.ok ? 'Done' : 'Error';
     } catch (err) {
       outputEl.textContent = 'Error: ' + err.message;
       loadState.textContent = 'Error';
     }
   });
+
+function formatResponse(data) {
+  if (!data) return '<div>No response.</div>';
+  if (data.error) return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
+
+  return '<pre style="white-space: pre-wrap; background: #09101f; color: #e8efff; border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 14px; margin: 0;">' +
+    escapeHtml(JSON.stringify(data, null, 2)) +
+  '</pre>';
+}
 
   function escapeHtml(str) {
     return String(str)
@@ -242,7 +251,7 @@ export default {
 `);
     }
 
-    if (url.pathname === "/health") {
+  if (url.pathname === "/health") {
   const corpus = await fetchCorpusFromR2(env);
   return json({
     ok: true,
@@ -416,3 +425,4 @@ function tokenize(s) {
     .filter(w => w.length > 3)
     .slice(0, 20);
 }
+
