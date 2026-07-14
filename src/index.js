@@ -222,8 +222,8 @@ const copyResponseBtn = document.getElementById('copyResponse');
 
 const billFile = document.getElementById('billFile');
 const billStatus = document.getElementById('billStatus');
-let Text = '';
-let Name = '';
+let uploadedBillText = '';
+let uploadedBillName = '';
 
 async function extractPdfText(file) {
   const arrayBuffer = await file.arrayBuffer();
@@ -249,12 +249,11 @@ billFile.addEventListener('change', async () => {
   const file = billFile.files && billFile.files[0];
   if (!file) return;
 
-  Name = file.name;
-
-  Text = await file.text();
+  uploadedBillName = file.name;
+  uploadedBillText = await file.text();
 
   if (billStatus) {
-    billStatus.textContent = 'Loaded ' + Name + ' ✓';
+    billStatus.textContent = 'Loaded ' + uploadedBillName + ' ✓';
   }
 });
 
@@ -267,10 +266,10 @@ analyzeBtn.addEventListener('click', async () => {
     form.append('text', textEl.value);
     form.append('voice', voiceEl.value);
 
-    if (billFile.files && billFile.files[0]) {
-      form.append('document', billFile.files[0]);
-      form.append('documentName', billFile.files[0].name);
-    }
+    if (uploadedBillText) {
+  form.append('documentText', uploadedBillText);
+  form.append('documentName', uploadedBillName);
+}
 
     const res = await fetch('/analyze', {
       method: 'POST',
@@ -341,11 +340,11 @@ function escapeHtml(str) {
 if (url.pathname === '/analyze' && request.method === 'POST') {
   try {
     const form = await request.formData();
-    const mode = form.get('mode') || 'legislation';
-    const inputText = form.get('text') || '';
-    const voice = form.get('voice') || 'Alyssa-CLO-public-comment';
-    const documentFile = form.get('document');
-    const documentName = form.get('documentName') || '';
+const mode = form.get('mode') || 'legislation';
+const inputText = form.get('text') || '';
+const voice = form.get('voice') || 'Alyssa-CLO-public-comment';
+const documentText = form.get('documentText') || '';
+const documentName = form.get('documentName') || '';
 
     let documentText = '';
 
