@@ -222,8 +222,8 @@ const copyResponseBtn = document.getElementById('copyResponse');
 
 const billFile = document.getElementById('billFile');
 const billStatus = document.getElementById('billStatus');
-let uploadedBillText = '';
-let uploadedBillName = '';
+let Text = '';
+let Name = '';
 
 async function extractPdfText(file) {
   const arrayBuffer = await file.arrayBuffer();
@@ -249,16 +249,12 @@ billFile.addEventListener('change', async () => {
   const file = billFile.files && billFile.files[0];
   if (!file) return;
 
-  uploadedBillName = file.name;
+  Name = file.name;
 
-  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-    uploadedBillText = await extractPdfText(file);
-  } else {
-    uploadedBillText = await file.text();
-  }
+  Text = await file.text();
 
   if (billStatus) {
-    billStatus.textContent = 'Loaded ' + uploadedBillName + ' ✓';
+    billStatus.textContent = 'Loaded ' + Name + ' ✓';
   }
 });
 
@@ -266,16 +262,19 @@ analyzeBtn.addEventListener('click', async () => {
   outputEl.textContent = 'Analyzing...';
   loadState.textContent = 'Working';
   try {
+    const form = new FormData();
+    form.append('mode', modeEl.value);
+    form.append('text', textEl.value);
+    form.append('voice', voiceEl.value);
+
+    if (billFile.files && billFile.files[0]) {
+      form.append('document', billFile.files[0]);
+      form.append('documentName', billFile.files[0].name);
+    }
+
     const res = await fetch('/analyze', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        mode: modeEl.value,
-        text: textEl.value,
-        voice: voiceEl.value,
-        document: uploadedBillText,
-        documentName: uploadedBillName
-      })
+      body: form
     });
 
     const data = await res.json();
@@ -339,29 +338,43 @@ function escapeHtml(str) {
   });
 }
 
-        if (url.pathname === '/analyze' && request.method === 'POST') {
-      try {
-        const body = await request.json();
-        const mode = body.mode || 'legislation';
-        const inputText = body.text || '';
-        const documentText = body.document || '';
-        const documentName = body.documentName || '';
-        const voice = body.voice || 'Alyssa-CLO-public-comment';
+if (url.pathname === '/analyze' && request.method === 'POST') {
+  try {
+    const form = await request.formData();
+    const mode = form.get('mode') || 'legislation';
+    const inputText = form.get('text') || '';
+    const voice = form.get('voice') || 'Alyssa-CLO-public-comment';
+    const documentFile = form.get('document');
+    const documentName = form.get('documentName') || '';
 
+    let documentText = '';
 
-        if (!inputText.trim()) {
-          return json({ error: 'Missing text input.' }, 400);
-        }
+    if (documentFile instanceof File) {
+      if (
+        documentFile.type === 'text/plain' ||
+        documentFile.name.toLowerCase().endsWith('.txt') ||
+        documentFile.name.toLowerCase().endsWith('.md') ||
+        documentFile.name.toLowerCase().endsWith('.text')
+      ) {
+        documentText = await documentFile.text();
+      } else if (documentFile.name.toLowerCase().endsWith('.pdf')) {
+        return json({ error: 'PDF extraction is not wired yet.' }, 400);
+      }
+    }
 
-        const corpusText = await fetchCorpusFromR2(env, inputText);
-        const prompt = buildPrompt({ mode, inputText, voice, corpusText, documentText, documentName });
+    if (!inputText.trim()) {
+      return json({ error: 'Missing text input.' }, 400);
+    }
 
-        const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
-          prompt,
-          max_tokens: 1200,
-          temperature: 0.3,
-        });
+    const corpusText = await fetchCorpusFromR2(env, inputText);
+    const prompt = buildPrompt({ mode, inputText, voice, corpusText, documentText, documentName });
 
+    const response = await env.AI.run("@cf/meta/llama-3.1-8b-instruct-fp8", {
+      prompt,
+      max_tokens: 1200,
+      temperature: 0.3,
+    });
+    
         return json({
           mode,
           voice,
