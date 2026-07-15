@@ -473,7 +473,7 @@ function buildPrompt({ mode, inputText, voice, corpusText, documentText, documen
     : "\n\nRelevant corpus data: (none provided)";
 
   const documentBlock = documentText
-    ? `\n\nUploaded document${documentName ? ` (${documentName})` : ''}:\n${documentText}`
+    ? `\n\nUploaded document${documentName ? ` (${documentName})` : ''}:\n${documentText.slice(0, 12000)}`
     : '';
 
   if (mode === "draft-review") {
