@@ -365,7 +365,6 @@ if (documentFile instanceof File) {
           documentPreview: String(documentText || '').slice(0, 800),
           documentName,
           output: response.response || response,
-          rawResponse: response,
         });
       } catch (err) {
         return json({
