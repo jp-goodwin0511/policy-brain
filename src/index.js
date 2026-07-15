@@ -362,7 +362,8 @@ if (documentFile instanceof File) {
           bucket: R2_BUCKET,
           objectKey: CORPUS_OBJECT_KEY,
           corpusPreview: corpusText.slice(0, 300),
-          output: response.response || response,
+          documentPreview: String(documentText || '').slice(0, 800),
+          documentName,
         });
       } catch (err) {
         return json({
