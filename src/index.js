@@ -335,8 +335,8 @@ if (documentFile instanceof File) {
     const buffer = await documentFile.arrayBuffer();
     documentText = await extractText(buffer);
   } else if (documentFile.name.toLowerCase().endsWith('.pdf')) {
-    const buffer = await documentFile.arrayBuffer();
-    const result = await extractText(new Uint8Array(buffer));
+    const buffer = new Uint8Array(await documentFile.arrayBuffer());
+    const result = await extractText(buffer);
     documentText = result.text || '';
   } else {
     return json({ error: 'Unsupported file type.' }, 400);
