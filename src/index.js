@@ -364,6 +364,8 @@ if (documentFile instanceof File) {
           corpusPreview: corpusText.slice(0, 300),
           documentPreview: String(documentText || '').slice(0, 800),
           documentName,
+          output: response.response || response,
+          rawResponse: response,
         });
       } catch (err) {
         return json({
