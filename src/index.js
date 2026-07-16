@@ -11,210 +11,353 @@ export default {
     if (url.pathname === "/") {
       return html(`
   <!doctype html>
-  <html lang="en">
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1" />
-      <title>Policy Brain Copilot</title>
-
-      <style>
-        :root {
-          --bg: #0b1020;
-          --panel: #11172a;
-          --text: #edf2ff;
-          --muted: #98a2c7;
-          --accent: #7c8cff;
-          --accent-2: #56c2ff;
-          --border: rgba(255,255,255,0.08);
-        }
-        * { box-sizing: border-box; }
-        body {
-          margin: 0;
-          min-height: 100vh;
-          background: radial-gradient(1200px 800px at 20% 0%, #182041 0%, var(--bg) 55%);
-          color: var(--text);
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        }
-        .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 20px 60px; }
-        .hero {
-          display: grid;
-          grid-template-columns: 1.1fr 0.9fr;
-          gap: 20px;
-          margin-bottom: 20px;
-        }
-        .card {
-          background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
-          border: 1px solid var(--border);
-          border-radius: 18px;
-          box-shadow: 0 12px 40px rgba(0,0,0,0.25);
-        }
-        .hero-main { padding: 28px; }
-        .eyebrow {
-          color: var(--accent-2);
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          font-size: 12px;
-        }
-        h1 { margin: 10px 0 12px; font-size: 38px; line-height: 1.05; }
-        .subtitle { color: var(--muted); font-size: 16px; line-height: 1.6; max-width: 60ch; }
-        .status-grid { display: grid; gap: 12px; }
-        .status {
-          padding: 18px;
-          background: rgba(7,10,20,0.35);
-          border: 1px solid var(--border);
-          border-radius: 14px;
-        }
-        .status label {
-          display: block;
-          color: var(--muted);
-          font-size: 12px;
-          margin-bottom: 8px;
-        }
-        .status strong { font-size: 15px; }
-        .panel { padding: 20px; }
-        .row {
-          display: flex;
-          gap: 12px;
-          flex-wrap: wrap;
-          align-items: center;
-          margin: 12px 0;
-        }
-        select, button, input, textarea {
-          background: #0d1324;
-          color: var(--text);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          padding: 12px 14px;
-          font-size: 14px;
-          outline: none;
-        }
-        textarea {
-          width: 100%;
-          min-height: 240px;
-          resize: vertical;
-          line-height: 1.55;
-        }
-        input { width: 360px; max-width: 100%; }
-        button {
-          background: linear-gradient(135deg, var(--accent), var(--accent-2));
-          border: none;
-          color: #08101f;
-          font-weight: 700;
-          cursor: pointer;
-          padding: 12px 18px;
-          box-shadow: 0 10px 28px rgba(86,194,255,0.18);
-        }
-        button:hover { filter: brightness(1.03); }
-        .hint { color: var(--muted); font-size: 13px; margin-top: 10px; }
-        pre {
-          margin: 0;
-          white-space: pre-wrap;
-          background: #09101f;
-          color: #e8efff;
-          border: 1px solid var(--border);
-          padding: 18px;
-          border-radius: 14px;
-          overflow-x: auto;
-          min-height: 260px;
-          line-height: 1.55;
-        }
-        .output-head {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin: 0 0 10px;
-        }
-        .pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          border: 1px solid var(--border);
-          background: rgba(255,255,255,0.03);
-          border-radius: 999px;
-          padding: 6px 10px;
-          color: var(--muted);
-          font-size: 12px;
-        }
-        @media (max-width: 900px) {
-          .hero { grid-template-columns: 1fr; }
-          h1 { font-size: 30px; }
-        }
-      </style>
-    </head>
-    <body>
-      <div class="wrap">
-        <div class="hero">
-          <div class="card hero-main">
-            <div class="eyebrow">Policy Brain</div>
-            <h1>Policy copilot for draft review and legislation analysis</h1>
-            <div class="subtitle">
-              Paste a draft document or policy text, choose a mode, and get a Cloudflare-style readout grounded in the live corpus.
-            </div>
-          </div>
-          <div class="card panel status-grid">
-            <div class="status">
-              <label>Status</label>
-              <strong>Live</strong>
-            </div>
-            <div class="status">
-              <label>Corpus source</label>
-              <strong>R2: Policy Brain - Master Tracker.csv</strong>
-            </div>
-            <div class="status">
-              <label>Voice</label>
-              <strong>Alyssa-CLO-public-comment</strong>
-            </div>
-          </div>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Policy Brain Copilot</title>
+    <style>
+      :root {
+        --bg: #0B1220;
+        --surface: #141D2B;
+        --surface-2: #1A2636;
+        --text: #F0F4F8;
+        --muted: #90A0B0;
+        --cf-orange: #F48120;
+        --cf-orange-2: #F8A23E;
+        --cf-blue: #0051C3;
+        --cf-blue-2: #4098F7;
+        --border: rgba(255,255,255,0.08);
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-font-smoothing: antialiased; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: radial-gradient(1200px 600px at 10% 0%, rgba(244,129,32,0.10) 0%, var(--bg) 55%),
+                    radial-gradient(1000px 600px at 90% 0%, rgba(0,81,195,0.10) 0%, var(--bg) 55%),
+                    var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      .wrap {
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 40px 20px 72px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 32px;
+      }
+      .logo {
+        width: 36px;
+        height: 36px;
+        background: linear-gradient(135deg, var(--cf-orange), var(--cf-orange-2));
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        box-shadow: 0 8px 20px rgba(244,129,32,0.22);
+      }
+      .logo svg { display: block; }
+      header h1 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+      }
+      header h1 span {
+        color: var(--muted);
+        font-weight: 500;
+        font-size: 15px;
+        margin-left: 8px;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.2fr 0.8fr;
+        gap: 20px;
+        margin-bottom: 24px;
+        align-items: stretch;
+      }
+      .card {
+        background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        box-shadow: 0 16px 48px rgba(0,0,0,0.28);
+        backdrop-filter: blur(4px);
+      }
+      .hero-main {
+        padding: 32px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .eyebrow {
+        color: var(--cf-orange-2);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        font-size: 12px;
+        margin-bottom: 12px;
+      }
+      .hero-main h2 {
+        margin: 0 0 14px;
+        font-size: 34px;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+      }
+      .subtitle {
+        color: var(--muted);
+        font-size: 16px;
+        line-height: 1.6;
+        max-width: 56ch;
+        margin: 0;
+      }
+      .status-grid {
+        padding: 24px;
+        display: grid;
+        gap: 14px;
+      }
+      .status {
+        padding: 16px 18px;
+        background: rgba(0,0,0,0.16);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        transition: border-color 0.2s ease, background 0.2s ease;
+      }
+      .status:hover {
+        border-color: rgba(244,129,32,0.35);
+        background: rgba(244,129,32,0.05);
+      }
+      .status label {
+        display: block;
+        color: var(--muted);
+        font-size: 11px;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+      }
+      .status strong {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text);
+      }
+      .panel { padding: 28px; }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .row:last-child { margin-bottom: 0; }
+      select, button, input, textarea {
+        background: var(--surface-2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+      select:focus, input:focus, textarea:focus {
+        border-color: rgba(64,152,247,0.5);
+        box-shadow: 0 0 0 3px rgba(64,152,247,0.12);
+      }
+      textarea {
+        width: 100%;
+        min-height: 240px;
+        resize: vertical;
+        line-height: 1.6;
+      }
+      input[type="file"] {
+        background: transparent;
+        border: none;
+        padding: 6px 0;
+        font-size: 13px;
+        color: var(--muted);
+        max-width: 320px;
+      }
+      input#voice { width: 420px; max-width: 100%; }
+      button#analyze {
+        background: linear-gradient(135deg, var(--cf-orange) 0%, var(--cf-orange-2) 100%);
+        border: none;
+        color: #08101f;
+        font-weight: 800;
+        cursor: pointer;
+        padding: 12px 22px;
+        box-shadow: 0 10px 28px rgba(244,129,32,0.18);
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+      }
+      button#analyze:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 14px 34px rgba(244,129,32,0.26);
+      }
+      button#analyze:active { transform: translateY(0); }
+      button#copyResponse {
+        background: transparent;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        border-radius: 10px;
+      }
+      button#copyResponse:hover {
+        border-color: rgba(64,152,247,0.4);
+        color: var(--text);
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+        margin-top: 4px;
+      }
+      .output-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+        gap: 12px;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.03);
+        border-radius: 999px;
+        padding: 6px 12px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .pill.working {
+        border-color: rgba(64,152,247,0.4);
+        background: rgba(64,152,247,0.12);
+        color: #B6D9FF;
+      }
+      .pill.done {
+        border-color: rgba(92,214,137,0.35);
+        background: rgba(92,214,137,0.10);
+        color: #B6F0CD;
+      }
+      .pill.error {
+        border-color: rgba(255,100,100,0.35);
+        background: rgba(255,100,100,0.10);
+        color: #FFB3B3;
+      }
+      #output {
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid var(--border);
+        padding: 22px;
+        border-radius: 16px;
+        overflow-x: auto;
+        min-height: 260px;
+        line-height: 1.55;
+        font-size: 14px;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+      }
+      #output strong { color: #fff; }
+      @media (max-width: 900px) {
+        .hero { grid-template-columns: 1fr; }
+        .hero-main h2 { font-size: 28px; }
+        input#voice { width: 100%; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M17.6 10.8c-1.1 0-2 .4-2.8 1.1L12 7.5l2.8-4.4c.8.7 1.7 1.1 2.8 1.1 1.6 0 3-1 3.6-2.3 0 0-3.6 8.8-3.6 8.9z" fill="white"/>
+            <path d="M12 7.5 9.2 11.9c-.8-.7-1.7-1.1-2.8-1.1C4.8 10.8 3 12.6 3 14.8c0 2.2 1.8 4 4 4h10.6c2.2 0 4-1.8 4-4 0-2.2-1.8-4-4-4-.6 0-1.1.1-1.6.4L12 7.5z" fill="white"/>
+          </svg>
         </div>
+        <h1>Policy Brain <span>Cloudflare Policy Copilot</span></h1>
+      </header>
 
-        <div class="card panel">
-          <div class="row">
-            <select id="mode">
-              <option value="draft-review">Draft review</option>
-              <option value="legislation" selected>Legislation / policy analysis</option>
-            </select>
-            <button id="analyze">Analyze</button>
-          </div>
-
-          <div class="row">
-            <textarea id="text" placeholder="Paste a draft document, bill, consultation, or comment here..."></textarea>
-          </div>
-
-          <div class="row">
-            <label for="billFile">Upload bill text:</label>
-            <input type="file" id="billFile" accept=".txt,.md,.text,.pdf">
- 	          <span id="billStatus" class="hint" style="margin-left:8px;"></span>
-          </div>
-
-
-          <div class="row">
-            <label for="voice">Voice:</label>
-            <input id="voice" value="Alyssa-CLO-public-comment" />
-          </div>
-
-          <div class="hint">
-            Tip: use Draft review for redlines/comments on your own writing; use Legislation / policy analysis for stance and comment drafting.
-          </div>
+      <div class="hero">
+        <div class="card hero-main">
+          <div class="eyebrow">Fast-track policy analysis</div>
+          <h2>Policy copilot for draft review and legislation analysis.</h2>
+          <p class="subtitle">
+            Upload legislation, consultations, press releases, or draft comments. The copilot
+            cross-references Cloudflare's policy corpus and returns a stance memo, draft
+            public comment, and open questions for human review.
+          </p>
         </div>
-
-        <div class="card panel" style="margin-top: 20px;">
-          <div class="output-head">
-            <div class="pill">Response</div>
-            <div class="pill" id="loadState">Ready</div>
-            <button id="copyResponse" type="button">Copy response</button>
+        <div class="card status-grid">
+          <div class="status">
+            <label>Status</label>
+            <strong>Live</strong>
           </div>
-          <pre id="output">Results will appear here.</pre>
+          <div class="status">
+            <label>Corpus source</label>
+            <strong>R2: Policy Brain - Master Tracker.csv</strong>
+          </div>
+          <div class="status">
+            <label>Voice</label>
+            <strong>Alyssa-CLO-public-comment</strong>
+          </div>
         </div>
       </div>
 
-      <script>
+      <div class="card panel">
+        <div class="row">
+          <select id="mode">
+            <option value="draft-review">Draft review</option>
+            <option value="legislation" selected>Legislation / policy analysis</option>
+          </select>
+          <button id="analyze">Analyze</button>
+        </div>
+
+        <div class="row">
+          <textarea id="text" placeholder="Paste a draft document, bill, consultation, or comment here..."></textarea>
+        </div>
+
+        <div class="row">
+          <label for="billFile">Upload bill text:</label>
+          <input type="file" id="billFile" accept=".txt,.md,.text,.pdf">
+          <span id="billStatus" class="hint" style="margin-left:8px;"></span>
+        </div>
+
+        <div class="row">
+          <label for="voice">Voice:</label>
+          <input id="voice" value="Alyssa-CLO-public-comment" />
+        </div>
+
+        <div class="hint">
+          Tip: use Draft review for redlines and comments on your own writing; use Legislation / policy analysis for stance and comment drafting.
+        </div>
+      </div>
+
+      <div class="card panel" style="margin-top: 24px;">
+        <div class="output-head">
+          <div class="pill" id="responsePill">Response</div>
+          <div class="row" style="margin-bottom:0;gap:10px;">
+            <div class="pill" id="loadState">Ready</div>
+            <button id="copyResponse" type="button">Copy response</button>
+          </div>
+        </div>
+        <pre id="output">Results will appear here.</pre>
+      </div>
+    </div>
+
+    <script>
 const analyzeBtn = document.getElementById('analyze');
 const textEl = document.getElementById('text');
 const modeEl = document.getElementById('mode');
 const voiceEl = document.getElementById('voice');
 const outputEl = document.getElementById('output');
 const loadState = document.getElementById('loadState');
+const responsePill = document.getElementById('responsePill');
 const copyResponseBtn = document.getElementById('copyResponse');
 
 const billFile = document.getElementById('billFile');
@@ -237,6 +380,8 @@ billFile.addEventListener('change', async () => {
 analyzeBtn.addEventListener('click', async () => {
   outputEl.textContent = 'Analyzing...';
   loadState.textContent = 'Working';
+  responsePill.className = 'pill working';
+  loadState.className = 'pill working';
   try {
     const form = new FormData();
     form.append('mode', modeEl.value);
@@ -246,7 +391,7 @@ analyzeBtn.addEventListener('click', async () => {
     if (billFile.files && billFile.files[0]) {
       form.append('document', billFile.files[0]);
       form.append('documentName', billFile.files[0].name);
-}
+    }
 
     const res = await fetch('/analyze', {
       method: 'POST',
@@ -256,9 +401,13 @@ analyzeBtn.addEventListener('click', async () => {
     const data = await res.json();
     outputEl.innerHTML = formatResponse(data);
     loadState.textContent = res.ok ? 'Done' : 'Error';
+    loadState.className = res.ok ? 'pill done' : 'pill error';
+    responsePill.className = 'pill';
   } catch (err) {
     outputEl.textContent = 'Error: ' + err.message;
     loadState.textContent = 'Error';
+    loadState.className = 'pill error';
+    responsePill.className = 'pill error';
   }
 });
 
@@ -281,9 +430,7 @@ function formatResponse(data) {
   const output = String(data.output || '').trim();
   if (!output) return '<div>No output.</div>';
 
-  return '<div style="white-space: pre-wrap; background: #09101f; color: #e8efff; border: 1px solid rgba(255,255,255,0.08); padding: 18px; border-radius: 14px; margin: 0;">' +
-    escapeHtml(output) +
-  '</div>';
+  return '<div style="white-space: pre-wrap;">' + escapeHtml(output) + '</div>';
 }
 
 function escapeHtml(str) {
@@ -294,10 +441,9 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-
-</script>
-    </body>
-  </html>
+    </script>
+  </body>
+</html>
 `);
     }
 
