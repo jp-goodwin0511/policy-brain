@@ -465,7 +465,7 @@ if (url.pathname === '/analyze' && request.method === 'POST') {
     const form = await request.formData();
 const mode = form.get('mode') || 'legislation';
 const inputText = form.get('text') || '';
-const voice = form.get('voice') || 'Alyssa-CLO-public-comment';
+const voice = form.get('voice') || 'Alissa-CLO-public-comment';
 const documentFile = form.get('document');
 const documentName = form.get('documentName') || '';
 
