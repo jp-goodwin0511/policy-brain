@@ -476,7 +476,7 @@ export default {
                   <div class="upload-hint">.txt, .md, or .pdf</div>
                 </div>
               </div>
-              <button type="button" class="upload-btn" id="uploadBtn">Choose file</button>
+              <span class="upload-btn" id="uploadBtn">Choose file</span>
             </label>
             <input type="file" id="billFile" accept=".txt,.md,.text,.pdf">
             <span id="billStatus" class="upload-filename"></span>
@@ -531,13 +531,7 @@ let lastResponseText = '';
 let lastMode = '';
 let lastVoice = '';
 
-uploadArea.addEventListener('click', (e) => {
-  // Prevent default label behavior to avoid double-triggering the file input
-  // The label naturally clicks the associated input, but we handle it via JS
-  if (e.target === uploadBtn || uploadBtn.contains(e.target)) return;
-  e.preventDefault();
-  billFile.click();
-});
+uploadArea.addEventListener('click', () => billFile.click());
 
 uploadBtn.addEventListener('click', (e) => {
   e.preventDefault();
