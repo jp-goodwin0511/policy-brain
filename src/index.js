@@ -531,7 +531,14 @@ let lastResponseText = '';
 let lastMode = '';
 let lastVoice = '';
 
-uploadArea.addEventListener('click', () => billFile.click());
+uploadArea.addEventListener('click', (e) => {
+  // Prevent default label behavior to avoid double-triggering the file input
+  // The label naturally clicks the associated input, but we handle it via JS
+  if (e.target === uploadBtn || uploadBtn.contains(e.target)) return;
+  e.preventDefault();
+  billFile.click();
+});
+
 uploadBtn.addEventListener('click', (e) => {
   e.preventDefault();
   e.stopPropagation();
@@ -563,7 +570,7 @@ analyzeBtn.addEventListener('click', async () => {
   lastMode = modeEl.value;
   lastVoice = voiceEl.value;
 
-  try {
+    try {
     const form = new FormData();
     form.append('mode', modeEl.value);
     form.append('text', textEl.value);
@@ -574,12 +581,16 @@ analyzeBtn.addEventListener('click', async () => {
       form.append('documentName', billFile.files[0].name);
     }
 
+    console.log('Sending analyze request...');
     const res = await fetch('/analyze', {
       method: 'POST',
       body: form
     });
 
+    console.log('Analyze response status:', res.status);
     const data = await res.json();
+    console.log('Analyze response data:', data);
+    
     outputEl.innerHTML = formatResponse(data);
     loadState.textContent = res.ok ? 'Done' : 'Error';
     loadState.className = res.ok ? 'pill done' : 'pill error';
@@ -591,6 +602,7 @@ analyzeBtn.addEventListener('click', async () => {
       applySuggestionsBtn.style.display = 'inline-block';
     }
   } catch (err) {
+    console.error('Analyze error:', err);
     outputEl.textContent = 'Error: ' + err.message;
     loadState.textContent = 'Error';
     loadState.className = 'pill error';
@@ -612,7 +624,10 @@ copyResponseBtn.addEventListener('click', async () => {
 });
 
 applySuggestionsBtn.addEventListener('click', async () => {
-  if (!lastOriginalText || !lastResponseText) return;
+  if (!lastOriginalText || !lastResponseText) {
+    console.warn('Apply suggestions clicked but missing state:', { lastOriginalText: !!lastOriginalText, lastResponseText: !!lastResponseText });
+    return;
+  }
 
   outputEl.textContent = 'Revising draft based on suggestions...';
   loadState.textContent = 'Working';
@@ -628,17 +643,22 @@ applySuggestionsBtn.addEventListener('click', async () => {
     form.append('text', revisePrompt);
     form.append('voice', lastVoice);
 
+    console.log('Sending implement-suggestions request...');
     const res = await fetch('/analyze', {
       method: 'POST',
       body: form
     });
 
+    console.log('Implement-suggestions response status:', res.status);
     const data = await res.json();
+    console.log('Implement-suggestions response data:', data);
+
     outputEl.innerHTML = formatResponse(data);
     loadState.textContent = res.ok ? 'Done' : 'Error';
     loadState.className = res.ok ? 'pill done' : 'pill error';
     responsePill.className = 'pill';
   } catch (err) {
+    console.error('Implement suggestions error:', err);
     outputEl.textContent = 'Error: ' + err.message;
     loadState.textContent = 'Error';
     loadState.className = 'pill error';
