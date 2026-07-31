@@ -242,6 +242,22 @@ export default {
         border-color: rgba(0,81,195,0.35);
         color: var(--text);
       }
+      button#applySuggestions {
+        background: var(--cf-blue-soft);
+        color: var(--cf-blue);
+        border: 1px solid rgba(0,81,195,0.35);
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        border-radius: 10px;
+        font-family: inherit;
+      }
+      button#applySuggestions:hover {
+        background: var(--cf-blue);
+        color: #ffffff;
+        border-color: var(--cf-blue);
+      }
       .hint {
         color: var(--muted);
         font-size: 13px;
@@ -432,8 +448,9 @@ export default {
       <div class="card panel">
         <div class="row">
           <select id="mode">
-            <option value="draft-review">Draft review</option>
             <option value="legislation" selected>Legislation / policy analysis</option>
+            <option value="draft-review">Draft review</option>
+            <option value="draft-from-scratch">Draft from scratch</option>
           </select>
           <button id="analyze">Analyze</button>
         </div>
@@ -472,7 +489,7 @@ export default {
         </div>
 
         <div class="hint">
-          Tip: use Draft review for redlines and comments on your own writing; use Legislation / policy analysis for stance and comment drafting.
+          Tip: <strong>Legislation / policy analysis</strong> for stance and comment drafting. <strong>Draft review</strong> for redlines and comments on your own writing. <strong>Draft from scratch</strong> to create new policy content from a topic.
         </div>
       </div>
 
@@ -481,6 +498,7 @@ export default {
           <div class="pill" id="responsePill">Response</div>
           <div class="row" style="margin-bottom:0;gap:10px;">
             <div class="pill" id="loadState">Ready</div>
+            <button id="applySuggestions" type="button" style="display:none;">Apply suggestions</button>
             <button id="copyResponse" type="button">Copy response</button>
           </div>
         </div>
@@ -497,6 +515,7 @@ const outputEl = document.getElementById('output');
 const loadState = document.getElementById('loadState');
 const responsePill = document.getElementById('responsePill');
 const copyResponseBtn = document.getElementById('copyResponse');
+const applySuggestionsBtn = document.getElementById('applySuggestions');
 
 const billFile = document.getElementById('billFile');
 const uploadArea = document.getElementById('uploadArea');
@@ -505,6 +524,10 @@ const uploadTitle = document.getElementById('uploadTitle');
 const billStatus = document.getElementById('billStatus');
 let uploadedBillText = '';
 let uploadedBillName = '';
+
+let lastOriginalText = '';
+let lastResponseText = '';
+let lastVoice = '';
 
 uploadArea.addEventListener('click', () => billFile.click());
 uploadBtn.addEventListener('click', (e) => {
@@ -522,7 +545,7 @@ billFile.addEventListener('change', async () => {
   uploadTitle.textContent = file.name;
 
   if (billStatus) {
-    billStatus.textContent = 'Loaded ' + uploadedBillName + ' ✓';
+    billStatus.textContent = 'Loaded ' + uploadedBillName + ' (done)';
   }
 });
 
@@ -531,6 +554,11 @@ analyzeBtn.addEventListener('click', async () => {
   loadState.textContent = 'Working';
   responsePill.className = 'pill working';
   loadState.className = 'pill working';
+  applySuggestionsBtn.style.display = 'none';
+
+  lastOriginalText = textEl.value;
+  lastVoice = voiceEl.value;
+
   try {
     const form = new FormData();
     form.append('mode', modeEl.value);
@@ -552,11 +580,17 @@ analyzeBtn.addEventListener('click', async () => {
     loadState.textContent = res.ok ? 'Done' : 'Error';
     loadState.className = res.ok ? 'pill done' : 'pill error';
     responsePill.className = 'pill';
+
+    lastResponseText = String(data.output || '');
+    if (res.ok && modeEl.value === 'draft-review' && lastResponseText) {
+      applySuggestionsBtn.style.display = 'inline-block';
+    }
   } catch (err) {
     outputEl.textContent = 'Error: ' + err.message;
     loadState.textContent = 'Error';
     loadState.className = 'pill error';
     responsePill.className = 'pill error';
+    applySuggestionsBtn.style.display = 'none';
   }
 });
 
@@ -569,6 +603,41 @@ copyResponseBtn.addEventListener('click', async () => {
     setTimeout(() => copyResponseBtn.textContent = old, 1200);
   } catch (err) {
     alert('Could not copy response: ' + err.message);
+  }
+});
+
+applySuggestionsBtn.addEventListener('click', async () => {
+  if (!lastOriginalText || !lastResponseText) return;
+
+  outputEl.textContent = 'Revising draft based on suggestions...';
+  loadState.textContent = 'Working';
+  responsePill.className = 'pill working';
+  loadState.className = 'pill working';
+  applySuggestionsBtn.style.display = 'none';
+
+  const revisePrompt = 'ORIGINAL DRAFT:\n' + lastOriginalText + '\n\n=== SUGGESTIONS TO IMPLEMENT ===\n' + lastResponseText;
+
+  try {
+    const form = new FormData();
+    form.append('mode', 'implement-suggestions');
+    form.append('text', revisePrompt);
+    form.append('voice', lastVoice);
+
+    const res = await fetch('/analyze', {
+      method: 'POST',
+      body: form
+    });
+
+    const data = await res.json();
+    outputEl.innerHTML = formatResponse(data);
+    loadState.textContent = res.ok ? 'Done' : 'Error';
+    loadState.className = res.ok ? 'pill done' : 'pill error';
+    responsePill.className = 'pill';
+  } catch (err) {
+    outputEl.textContent = 'Error: ' + err.message;
+    loadState.textContent = 'Error';
+    loadState.className = 'pill error';
+    responsePill.className = 'pill error';
   }
 });
 
@@ -694,9 +763,21 @@ function normalizeCorpusText(text, inputText = '') {
 
   const headers = parseCsvLine(firstLine);
   const tokens = tokenize(inputText);
+  const keyPhrases = extractKeyPhrases(inputText);
+  const geoBoost = getGeoBoost(inputText);
+
+  const entityKeywords = [];
+  const entityMatches = inputText.match(/\b(Google|Amazon|Meta|Facebook|Apple|Microsoft|Twitter|Cloudflare|OpenAI|EU Commission|FCC|Ofcom|ACMA|CRTC|Berlin|Brussels|UK|US|EU)\b/gi);
+  if (entityMatches) {
+    for (const m of entityMatches) {
+      const kw = m.toLowerCase();
+      if (!entityKeywords.includes(kw)) entityKeywords.push(kw);
+    }
+  }
+
   const scored = [];
 
-  for (const line of lines.slice(1, 26)) {
+  for (const line of lines.slice(1, 501)) {
     if (!line.trim()) continue;
 
     const cols = parseCsvLine(line);
@@ -712,7 +793,6 @@ function normalizeCorpusText(text, inputText = '') {
     const titleLower = title.toLowerCase();
     const scoreNum = Number(String(score).replace(/[^0-9.-]/g, '')) || 0;
 
-    // Drop low-signal rows
     if (scoreNum < 5) continue;
     if (titleLower.includes('buildathon')) continue;
     if (titleLower.includes('party')) continue;
@@ -721,19 +801,63 @@ function normalizeCorpusText(text, inputText = '') {
     if (!summary && scoreNum < 7) continue;
 
     const hay = (title + ' ' + topic + ' ' + jurisdiction + ' ' + status + ' ' + summary).toLowerCase();
+
     let hit = 0;
     for (const token of tokens) {
       if (token && hay.includes(token)) hit += 1;
     }
 
+    let phraseHit = 0;
+    for (const phrase of keyPhrases) {
+      if (hay.includes(phrase)) phraseHit += 1;
+    }
+
+    let entityHit = 0;
+    for (const kw of entityKeywords) {
+      if (hay.includes(kw)) entityHit += 1;
+    }
+
+    let geoMatch = 0;
+    if (geoBoost.eu && /\b(eu|european|europe|commission|gdpr|dma|dsa|berlin|brussels)\b/i.test(hay)) geoMatch += geoBoost.eu;
+    if (geoBoost.us && /\b(us|united states|american|usa|fcc|congress|federal|washington)\b/i.test(hay)) geoMatch += geoBoost.us;
+    if (geoBoost.uk && /\b(uk|united kingdom|british|ofcom|london|england)\b/i.test(hay)) geoMatch += geoBoost.uk;
+    if (geoBoost.au && /\b(australia|australian|canberra|acma)\b/i.test(hay)) geoMatch += geoBoost.au;
+    if (geoBoost.ca && /\b(canada|canadian|crtc|ottawa)\b/i.test(hay)) geoMatch += geoBoost.ca;
+
+    const jurisLower = jurisdiction.toLowerCase();
+    if (geoBoost.eu && (jurisLower.includes('eu') || jurisLower.includes('european') || jurisLower.includes('europe'))) geoMatch += 2;
+    if (geoBoost.us && (jurisLower.includes('us') || jurisLower.includes('united states') || jurisLower.includes('federal'))) geoMatch += 2;
+    if (geoBoost.uk && (jurisLower.includes('uk') || jurisLower.includes('united kingdom') || jurisLower.includes('british'))) geoMatch += 2;
+
+    const topicLower = topic.toLowerCase();
+    if (/\b(crawler|scraping|bot|robots\.txt|search|indexing|ai training|data mining)\b/i.test(inputText)) {
+      if (/\b(crawler|scraping|bot|search|indexing|data)\b/i.test(topicLower + ' ' + titleLower)) geoMatch += 2;
+    }
+    if (/\b(privacy|gdpr|data protection|personal data)\b/i.test(inputText)) {
+      if (/\b(privacy|gdpr|data protection|personal data)\b/i.test(topicLower + ' ' + titleLower)) geoMatch += 2;
+    }
+    if (/\b(interconnection|network|peering|traffic|isp)\b/i.test(inputText)) {
+      if (/\b(interconnection|network|peering|traffic|isp)\b/i.test(topicLower + ' ' + titleLower)) geoMatch += 2;
+    }
+
+    const weight = (hit * 5) + (phraseHit * 15) + (entityHit * 20) + (scoreNum * 0.5) + geoMatch;
+
     scored.push({
-      weight: hit * 10 + scoreNum,
+      weight,
       text: title + ' | topic=' + topic + ' | jurisdiction=' + jurisdiction + ' | status=' + status + ' | score=' + score + ' | summary=' + summary
     });
   }
 
   scored.sort((a, b) => b.weight - a.weight);
-  return scored.slice(0, 6).map(x => x.text).join('\n');
+
+  const topResults = scored.slice(0, 6);
+  const minWeight = 3;
+
+  if (topResults.length > 0 && topResults[0].weight < minWeight) {
+    return '(No highly relevant corpus entries found for this query. The corpus may lack coverage for this topic, or you may want to add more specific keywords.)';
+  }
+
+  return topResults.filter(r => r.weight >= minWeight).map(x => x.text).join('\n');
 }
 
 function parseCsvLine(line) {
@@ -774,6 +898,14 @@ function buildPrompt({ mode, inputText, voice, corpusText, documentText, documen
     return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alissa would likely say.\n2. List concrete comments she would leave.\n3. Suggest revised wording where appropriate.\n4. Keep the tone measured, policy-grounded, and concise.\n5. If the corpus does not contain a direct precedent, say so explicitly and avoid overconfident conclusions.\n\nDraft text:\n${inputText}${documentBlock}${corpusBlock}\n\nImportant: prioritize the uploaded document and the user's draft text above the corpus. Use the corpus only for precedent, style, or comparison. If the corpus lacks a relevant precedent, say so.\n\nReturn:\n- brief assessment\n- bullet comments\n- suggested edits\n- unresolved questions`;
   }
 
+  if (mode === "implement-suggestions") {
+    return `You are a Cloudflare policy copilot. The user received feedback on their draft and wants you to implement the suggestions into a revised version.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Read the original draft and the suggestions carefully.\n2. Produce a complete, polished revised draft that incorporates the suggested changes.\n3. Maintain the original structure and flow where possible, but improve clarity, tone, and substance based on the feedback.\n4. Do NOT just list the changes — output the full revised text.\n5. If a suggestion conflicts with the voice or policy stance, use your judgment and prioritize the voice profile.\n6. Add a brief "Changes Made" section at the end listing the key revisions.\n\n${inputText}${documentBlock}${corpusBlock}\n\nReturn the full revised draft followed by a "Changes Made" section.`;
+  }
+
+  if (mode === "draft-from-scratch") {
+    return `You are a Cloudflare policy copilot. The user wants you to draft a policy document from scratch.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Based on the user's topic description and the corpus data, draft a complete, polished policy document.\n2. If the corpus contains relevant precedents, use them for style, substance, and framing.\n3. If the corpus does not contain relevant precedents, say so explicitly and draft based on general Cloudflare policy principles (pro-internet, pro-privacy, pro-competition, measured tone).\n4. The draft should be ready for human review with minimal editing.\n5. Include a brief "Rationale" section explaining key choices.\n\nTopic/description:\n${inputText}${documentBlock}${corpusBlock}\n\nReturn:\n- the full draft\n- a brief rationale\n- open questions for human review`;
+  }
+
     return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's likely stance only if supported by the corpus.\n2. If the corpus does not contain a direct precedent, say so explicitly.\n3. Draft a concise internal stance memo.\n4. Draft a short public comment in Cloudflare's voice.\n5. Surface only the most important unresolved questions.\n6. Avoid overconfident conclusions and avoid legal advice framing.\n\nPolicy input:\n${inputText}${documentBlock}${corpusBlock}\n\nImportant: base your stance and comments primarily on the uploaded document and the user's prompt. Use the corpus only as supporting precedent. If the corpus lacks a relevant precedent, say so explicitly and avoid overconfident conclusions.\n\nReturn:\n- stance summary\n- internal memo\n- draft comment\n- open questions`;
 }
 
@@ -797,5 +929,31 @@ function tokenize(s) {
     .split(/\s+/)
     .filter(w => w.length > 3)
     .slice(0, 20);
+}
+
+function extractKeyPhrases(text) {
+  const lower = text.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ');
+  const words = lower.split(/\s+/).filter(w => w.length > 2);
+  const phrases = [];
+  for (let i = 0; i < words.length - 1; i++) {
+    const bigram = words[i] + ' ' + words[i + 1];
+    if (bigram.length > 6 && !phrases.includes(bigram)) phrases.push(bigram);
+  }
+  for (let i = 0; i < words.length - 2; i++) {
+    const trigram = words[i] + ' ' + words[i + 1] + ' ' + words[i + 2];
+    if (trigram.length > 10 && !phrases.includes(trigram)) phrases.push(trigram);
+  }
+  return phrases.slice(0, 15);
+}
+
+function getGeoBoost(inputText) {
+  const boost = {};
+  const lower = inputText.toLowerCase();
+  if (/\b(eu|european|europe|commission|member state|gdpr|dma|dsa|berlin|brussels|paris)\b/.test(lower)) boost.eu = 4;
+  if (/\b(us|united states|american|usa|fcc|congress|federal|washington|nprm)\b/.test(lower)) boost.us = 4;
+  if (/\b(uk|united kingdom|british|ofcom|london|england)\b/.test(lower)) boost.uk = 4;
+  if (/\b(australia|australian|canberra|acma)\b/.test(lower)) boost.au = 4;
+  if (/\b(canada|canadian|crtc|ottawa)\b/.test(lower)) boost.ca = 4;
+  return boost;
 }
 
