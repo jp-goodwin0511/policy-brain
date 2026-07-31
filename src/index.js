@@ -625,7 +625,7 @@ copyResponseBtn.addEventListener('click', async () => {
 
 applySuggestionsBtn.addEventListener('click', async () => {
   if (!lastOriginalText || !lastResponseText) {
-    console.warn('Apply suggestions clicked but missing state:', { lastOriginalText: !!lastOriginalText, lastResponseText: !!lastResponseText });
+    console.warn('Apply suggestions clicked but missing state');
     return;
   }
 
