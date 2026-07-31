@@ -548,7 +548,7 @@ billFile.addEventListener('change', async () => {
   uploadTitle.textContent = file.name;
 
   if (billStatus) {
-    billStatus.textContent = 'Loaded ' + uploadedBillName + ' ✓';
+    billStatus.textContent = 'Loaded ' + uploadedBillName + ' (done)';
   }
 });
 
