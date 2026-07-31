@@ -10,7 +10,7 @@ export default {
 
     if (url.pathname === "/") {
       return html(`
-  <!doctype html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -18,27 +18,32 @@ export default {
     <title>Policy Brain Copilot</title>
     <style>
       :root {
-        --bg: #0B1220;
-        --surface: #141D2B;
-        --surface-2: #1A2636;
-        --text: #F0F4F8;
-        --muted: #90A0B0;
+        --bg: #F6F8FA;
+        --surface: #FFFFFF;
+        --surface-2: #FFFFFF;
+        --surface-3: #EDF1F7;
+        --text: #0B1220;
+        --muted: #536372;
+        --border: rgba(11,18,32,0.10);
+        --border-strong: rgba(11,18,32,0.18);
         --cf-orange: #F48120;
         --cf-orange-2: #F8A23E;
+        --cf-orange-soft: #FFF2E5;
         --cf-blue: #0051C3;
         --cf-blue-2: #4098F7;
-        --border: rgba(255,255,255,0.08);
+        --cf-blue-soft: #EAF5FF;
       }
       * { box-sizing: border-box; }
       html { -webkit-font-smoothing: antialiased; }
       body {
         margin: 0;
         min-height: 100vh;
-        background: radial-gradient(1200px 600px at 10% 0%, rgba(244,129,32,0.10) 0%, var(--bg) 55%),
-                    radial-gradient(1000px 600px at 90% 0%, rgba(0,81,195,0.10) 0%, var(--bg) 55%),
-                    var(--bg);
+        background:
+          radial-gradient(1200px 600px at 10% -5%, rgba(244,129,32,0.08) 0%, transparent 55%),
+          radial-gradient(1000px 500px at 90% -5%, rgba(0,81,195,0.08) 0%, transparent 55%),
+          var(--bg);
         color: var(--text);
-        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", Arial, sans-serif;
       }
       .wrap {
         max-width: 1120px;
@@ -54,7 +59,7 @@ export default {
       .logo {
         width: 36px;
         height: 36px;
-        background: linear-gradient(135deg, var(--cf-orange), var(--cf-orange-2));
+        background: linear-gradient(135deg, var(--cf-orange) 0%, var(--cf-orange-2) 100%);
         border-radius: 10px;
         display: grid;
         place-items: center;
@@ -65,6 +70,7 @@ export default {
         margin: 0;
         font-size: 22px;
         letter-spacing: -0.02em;
+        font-weight: 800;
       }
       header h1 span {
         color: var(--muted);
@@ -80,11 +86,12 @@ export default {
         align-items: stretch;
       }
       .card {
-        background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+        background: var(--surface);
         border: 1px solid var(--border);
         border-radius: 20px;
-        box-shadow: 0 16px 48px rgba(0,0,0,0.28);
-        backdrop-filter: blur(4px);
+        box-shadow:
+          0 2px 4px rgba(11,18,32,0.02),
+          0 8px 24px rgba(11,18,32,0.06);
       }
       .hero-main {
         padding: 32px;
@@ -93,18 +100,30 @@ export default {
         justify-content: center;
       }
       .eyebrow {
-        color: var(--cf-orange-2);
-        font-weight: 700;
-        letter-spacing: 0.1em;
+        color: var(--cf-orange);
+        font-weight: 800;
+        letter-spacing: 0.08em;
         text-transform: uppercase;
         font-size: 12px;
         margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .eyebrow::before {
+        content: '';
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--cf-orange-2);
       }
       .hero-main h2 {
         margin: 0 0 14px;
+        font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
         font-size: 34px;
-        line-height: 1.1;
-        letter-spacing: -0.02em;
+        line-height: 1.15;
+        letter-spacing: -0.01em;
+        font-weight: 700;
       }
       .subtitle {
         color: var(--muted);
@@ -120,14 +139,14 @@ export default {
       }
       .status {
         padding: 16px 18px;
-        background: rgba(0,0,0,0.16);
+        background: var(--surface-3);
         border: 1px solid var(--border);
         border-radius: 14px;
         transition: border-color 0.2s ease, background 0.2s ease;
       }
       .status:hover {
         border-color: rgba(244,129,32,0.35);
-        background: rgba(244,129,32,0.05);
+        background: var(--cf-orange-soft);
       }
       .status label {
         display: block;
@@ -136,6 +155,7 @@ export default {
         margin-bottom: 6px;
         text-transform: uppercase;
         letter-spacing: 0.08em;
+        font-weight: 700;
       }
       .status strong {
         font-weight: 600;
@@ -158,12 +178,16 @@ export default {
         border-radius: 12px;
         padding: 12px 14px;
         font-size: 14px;
+        font-family: inherit;
         outline: none;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+      }
+      select:hover, input:hover, textarea:hover {
+        border-color: rgba(0,81,195,0.25);
       }
       select:focus, input:focus, textarea:focus {
-        border-color: rgba(64,152,247,0.5);
-        box-shadow: 0 0 0 3px rgba(64,152,247,0.12);
+        border-color: rgba(64,152,247,0.6);
+        box-shadow: 0 0 0 3px var(--cf-blue-soft);
       }
       textarea {
         width: 100%;
@@ -172,41 +196,50 @@ export default {
         line-height: 1.6;
       }
       input[type="file"] {
-        background: transparent;
-        border: none;
-        padding: 6px 0;
-        font-size: 13px;
-        color: var(--muted);
-        max-width: 320px;
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
       }
       input#voice { width: 420px; max-width: 100%; }
+      select {
+        background: var(--surface-2);
+        min-width: 240px;
+        cursor: pointer;
+      }
       button#analyze {
         background: linear-gradient(135deg, var(--cf-orange) 0%, var(--cf-orange-2) 100%);
         border: none;
-        color: #08101f;
+        color: #111111;
         font-weight: 800;
         cursor: pointer;
         padding: 12px 22px;
-        box-shadow: 0 10px 28px rgba(244,129,32,0.18);
+        box-shadow: 0 10px 28px rgba(244,129,32,0.16);
         transition: transform 0.15s ease, box-shadow 0.2s ease;
       }
       button#analyze:hover {
         transform: translateY(-1px);
-        box-shadow: 0 14px 34px rgba(244,129,32,0.26);
+        box-shadow: 0 14px 34px rgba(244,129,32,0.24);
       }
       button#analyze:active { transform: translateY(0); }
       button#copyResponse {
-        background: transparent;
+        background: var(--surface-2);
         color: var(--muted);
         border: 1px solid var(--border);
         padding: 8px 14px;
         font-size: 12px;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
         border-radius: 10px;
+        font-family: inherit;
       }
       button#copyResponse:hover {
-        border-color: rgba(64,152,247,0.4);
+        border-color: rgba(0,81,195,0.35);
         color: var(--text);
       }
       .hint {
@@ -214,6 +247,91 @@ export default {
         font-size: 13px;
         line-height: 1.5;
         margin-top: 4px;
+      }
+      .upload-box {
+        flex: 1 1 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+      .upload-label {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+      }
+      .upload-area {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        width: 100%;
+        padding: 18px 22px;
+        border: 2px dashed var(--border-strong);
+        border-radius: 14px;
+        background: var(--surface-3);
+        transition: border-color 0.2s ease, background 0.2s ease;
+        cursor: pointer;
+      }
+      .upload-area:hover {
+        border-color: rgba(244,129,32,0.5);
+        background: var(--cf-orange-soft);
+      }
+      .upload-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .upload-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.8);
+        border: 1px solid var(--border);
+        display: grid;
+        place-items: center;
+        color: var(--cf-blue);
+        flex-shrink: 0;
+      }
+      .upload-icon svg {
+        width: 22px;
+        height: 22px;
+      }
+      .upload-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .upload-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .upload-hint {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .upload-btn {
+        background: var(--surface);
+        color: var(--cf-blue);
+        border: 1px solid var(--border-strong);
+        border-radius: 10px;
+        padding: 8px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+        flex-shrink: 0;
+        transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+      }
+      .upload-btn:hover {
+        border-color: var(--cf-blue);
+        background: var(--cf-blue-soft);
+      }
+      .upload-filename {
+        font-size: 13px;
+        color: var(--muted);
+        font-weight: 500;
       }
       .output-head {
         display: flex;
@@ -227,27 +345,27 @@ export default {
         align-items: center;
         gap: 8px;
         border: 1px solid var(--border);
-        background: rgba(255,255,255,0.03);
+        background: var(--surface-3);
         border-radius: 999px;
         padding: 6px 12px;
         color: var(--muted);
         font-size: 12px;
-        font-weight: 600;
+        font-weight: 700;
       }
       .pill.working {
-        border-color: rgba(64,152,247,0.4);
-        background: rgba(64,152,247,0.12);
-        color: #B6D9FF;
+        border-color: rgba(0,81,195,0.25);
+        background: var(--cf-blue-soft);
+        color: var(--cf-blue);
       }
       .pill.done {
         border-color: rgba(92,214,137,0.35);
-        background: rgba(92,214,137,0.10);
-        color: #B6F0CD;
+        background: #ECFDF6;
+        color: #047857;
       }
       .pill.error {
-        border-color: rgba(255,100,100,0.35);
-        background: rgba(255,100,100,0.10);
-        color: #FFB3B3;
+        border-color: rgba(220,38,38,0.25);
+        background: #FEF2F2;
+        color: #DC2626;
       }
       #output {
         white-space: pre-wrap;
@@ -261,13 +379,15 @@ export default {
         min-height: 260px;
         line-height: 1.55;
         font-size: 14px;
-        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.02);
+        font-family: inherit;
+        box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
       }
-      #output strong { color: #fff; }
+      #output strong { color: #111111; font-weight: 700; }
       @media (max-width: 900px) {
         .hero { grid-template-columns: 1fr; }
         .hero-main h2 { font-size: 28px; }
         input#voice { width: 100%; }
+        .upload-area { flex-direction: column; align-items: flex-start; }
       }
     </style>
   </head>
@@ -304,7 +424,7 @@ export default {
           </div>
           <div class="status">
             <label>Voice</label>
-            <strong>Alissa-CLO-public-comment</strong>
+            <strong>Alyssa-CLO-public-comment</strong>
           </div>
         </div>
       </div>
@@ -323,14 +443,32 @@ export default {
         </div>
 
         <div class="row">
-          <label for="billFile">Upload bill text:</label>
-          <input type="file" id="billFile" accept=".txt,.md,.text,.pdf">
-          <span id="billStatus" class="hint" style="margin-left:8px;"></span>
+          <div class="upload-box">
+            <div class="upload-label">Upload bill or document</div>
+            <label for="billFile" class="upload-area" id="uploadArea">
+              <div class="upload-left">
+                <div class="upload-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <div class="upload-text">
+                  <div class="upload-title" id="uploadTitle">Click to upload a file</div>
+                  <div class="upload-hint">.txt, .md, or .pdf</div>
+                </div>
+              </div>
+              <button type="button" class="upload-btn" id="uploadBtn">Choose file</button>
+            </label>
+            <input type="file" id="billFile" accept=".txt,.md,.text,.pdf">
+            <span id="billStatus" class="upload-filename"></span>
+          </div>
         </div>
 
         <div class="row">
           <label for="voice">Voice:</label>
-          <input id="voice" value="Alissa-CLO-public-comment" />
+          <input id="voice" value="Alyssa-CLO-public-comment" />
         </div>
 
         <div class="hint">
@@ -361,9 +499,19 @@ const responsePill = document.getElementById('responsePill');
 const copyResponseBtn = document.getElementById('copyResponse');
 
 const billFile = document.getElementById('billFile');
+const uploadArea = document.getElementById('uploadArea');
+const uploadBtn = document.getElementById('uploadBtn');
+const uploadTitle = document.getElementById('uploadTitle');
 const billStatus = document.getElementById('billStatus');
 let uploadedBillText = '';
 let uploadedBillName = '';
+
+uploadArea.addEventListener('click', () => billFile.click());
+uploadBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  billFile.click();
+});
 
 billFile.addEventListener('change', async () => {
   const file = billFile.files && billFile.files[0];
@@ -371,6 +519,7 @@ billFile.addEventListener('change', async () => {
 
   uploadedBillName = file.name;
   uploadedBillText = '';
+  uploadTitle.textContent = file.name;
 
   if (billStatus) {
     billStatus.textContent = 'Loaded ' + uploadedBillName + ' ✓';
@@ -425,7 +574,7 @@ copyResponseBtn.addEventListener('click', async () => {
 
 function formatResponse(data) {
   if (!data) return '<div>No response.</div>';
-  if (data.error) return '<div style="color:#ff9b9b;"><strong>Error:</strong> ' + escapeHtml(String(data.error)) + '</div>';
+  if (data.error) return '<div style="color:#DC2626;font-weight:700;">Error: ' + escapeHtml(String(data.error)) + '</div>';
 
   const output = String(data.output || '').trim();
   if (!output) return '<div>No output.</div>';
