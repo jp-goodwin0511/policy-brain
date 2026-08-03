@@ -432,8 +432,9 @@ export default {
       <div class="card panel">
         <div class="row">
           <select id="mode">
-            <option value="draft-review">Draft review</option>
             <option value="legislation" selected>Legislation / policy analysis</option>
+            <option value="draft-review">Draft review</option>
+            <option value="draft-from-scratch">Draft from scratch</option>
           </select>
           <button id="analyze">Analyze</button>
         </div>
@@ -472,7 +473,7 @@ export default {
         </div>
 
         <div class="hint">
-          Tip: use Draft review for redlines and comments on your own writing; use Legislation / policy analysis for stance and comment drafting.
+          Tip: <strong>Legislation / policy analysis</strong> for stance and comment drafting. <strong>Draft review</strong> for redlines and comments on your own writing. <strong>Draft from scratch</strong> to create new policy content from a topic.
         </div>
       </div>
 
@@ -522,7 +523,7 @@ billFile.addEventListener('change', async () => {
   uploadTitle.textContent = file.name;
 
   if (billStatus) {
-    billStatus.textContent = 'Loaded ' + uploadedBillName + ' ✓';
+    billStatus.textContent = 'Loaded ' + uploadedBillName + ' (done)';
   }
 });
 
@@ -772,6 +773,10 @@ function buildPrompt({ mode, inputText, voice, corpusText, documentText, documen
 
   if (mode === "draft-review") {
     return `You are a Cloudflare policy copilot. The user provided a draft document.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Explain what Alissa would likely say.\n2. List concrete comments she would leave.\n3. Suggest revised wording where appropriate.\n4. Keep the tone measured, policy-grounded, and concise.\n5. If the corpus does not contain a direct precedent, say so explicitly and avoid overconfident conclusions.\n\nDraft text:\n${inputText}${documentBlock}${corpusBlock}\n\nImportant: prioritize the uploaded document and the user's draft text above the corpus. Use the corpus only for precedent, style, or comparison. If the corpus lacks a relevant precedent, say so.\n\nReturn:\n- brief assessment\n- bullet comments\n- suggested edits\n- unresolved questions`;
+  }
+
+  if (mode === "draft-from-scratch") {
+    return `You are a Cloudflare policy copilot. The user wants you to draft a policy document from scratch.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Based on the user's topic description and the corpus data, draft a complete, polished policy document.\n2. If the corpus contains relevant precedents, use them for style, substance, and framing.\n3. If the corpus does not contain relevant precedents, say so explicitly and draft based on general Cloudflare policy principles (pro-internet, pro-privacy, pro-competition, measured tone).\n4. The draft should be ready for human review with minimal editing.\n5. Include a brief "Rationale" section explaining key choices.\n\nTopic/description:\n${inputText}${documentBlock}${corpusBlock}\n\nReturn:\n- the full draft\n- a brief rationale\n- open questions for human review`;
   }
 
     return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's likely stance only if supported by the corpus.\n2. If the corpus does not contain a direct precedent, say so explicitly.\n3. Draft a concise internal stance memo.\n4. Draft a short public comment in Cloudflare's voice.\n5. Surface only the most important unresolved questions.\n6. Avoid overconfident conclusions and avoid legal advice framing.\n\nPolicy input:\n${inputText}${documentBlock}${corpusBlock}\n\nImportant: base your stance and comments primarily on the uploaded document and the user's prompt. Use the corpus only as supporting precedent. If the corpus lacks a relevant precedent, say so explicitly and avoid overconfident conclusions.\n\nReturn:\n- stance summary\n- internal memo\n- draft comment\n- open questions`;
