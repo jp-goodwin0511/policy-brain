@@ -242,6 +242,23 @@ export default {
         border-color: rgba(0,81,195,0.35);
         color: var(--text);
       }
+      button#applySuggestions {
+        background: var(--cf-blue-soft);
+        color: var(--cf-blue);
+        border: 1px solid rgba(0,81,195,0.35);
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        border-radius: 10px;
+        font-family: inherit;
+        display: none;
+      }
+      button#applySuggestions:hover {
+        background: var(--cf-blue);
+        color: #ffffff;
+        border-color: var(--cf-blue);
+      }
       .hint {
         color: var(--muted);
         font-size: 13px;
@@ -482,6 +499,7 @@ export default {
           <div class="pill" id="responsePill">Response</div>
           <div class="row" style="margin-bottom:0;gap:10px;">
             <div class="pill" id="loadState">Ready</div>
+            <button id="applySuggestions" type="button">Apply suggestions</button>
             <button id="copyResponse" type="button">Copy response</button>
           </div>
         </div>
@@ -498,6 +516,7 @@ const outputEl = document.getElementById('output');
 const loadState = document.getElementById('loadState');
 const responsePill = document.getElementById('responsePill');
 const copyResponseBtn = document.getElementById('copyResponse');
+const applySuggestionsBtn = document.getElementById('applySuggestions');
 
 const billFile = document.getElementById('billFile');
 const uploadArea = document.getElementById('uploadArea');
@@ -527,11 +546,20 @@ billFile.addEventListener('change', async () => {
   }
 });
 
+let lastOriginalText = '';
+let lastResponseText = '';
+let lastVoice = '';
+
 analyzeBtn.addEventListener('click', async () => {
   outputEl.textContent = 'Analyzing...';
   loadState.textContent = 'Working';
   responsePill.className = 'pill working';
   loadState.className = 'pill working';
+  applySuggestionsBtn.style.display = 'none';
+
+  lastOriginalText = textEl.value;
+  lastVoice = voiceEl.value;
+
   try {
     const form = new FormData();
     form.append('mode', modeEl.value);
@@ -553,11 +581,17 @@ analyzeBtn.addEventListener('click', async () => {
     loadState.textContent = res.ok ? 'Done' : 'Error';
     loadState.className = res.ok ? 'pill done' : 'pill error';
     responsePill.className = 'pill';
+
+    lastResponseText = String(data.output || '');
+    if (res.ok && modeEl.value === 'draft-review' && lastResponseText) {
+      applySuggestionsBtn.style.display = 'inline-block';
+    }
   } catch (err) {
     outputEl.textContent = 'Error: ' + err.message;
     loadState.textContent = 'Error';
     loadState.className = 'pill error';
     responsePill.className = 'pill error';
+    applySuggestionsBtn.style.display = 'none';
   }
 });
 
@@ -570,6 +604,41 @@ copyResponseBtn.addEventListener('click', async () => {
     setTimeout(() => copyResponseBtn.textContent = old, 1200);
   } catch (err) {
     alert('Could not copy response: ' + err.message);
+  }
+});
+
+applySuggestionsBtn.addEventListener('click', async () => {
+  if (!lastOriginalText || !lastResponseText) return;
+
+  outputEl.textContent = 'Revising draft based on suggestions...';
+  loadState.textContent = 'Working';
+  responsePill.className = 'pill working';
+  loadState.className = 'pill working';
+  applySuggestionsBtn.style.display = 'none';
+
+  const revisePrompt = 'ORIGINAL DRAFT:\n' + lastOriginalText + '\n\n=== SUGGESTIONS TO IMPLEMENT ===\n' + lastResponseText;
+
+  try {
+    const form = new FormData();
+    form.append('mode', 'implement-suggestions');
+    form.append('text', revisePrompt);
+    form.append('voice', lastVoice);
+
+    const res = await fetch('/analyze', {
+      method: 'POST',
+      body: form
+    });
+
+    const data = await res.json();
+    outputEl.innerHTML = formatResponse(data);
+    loadState.textContent = res.ok ? 'Done' : 'Error';
+    loadState.className = res.ok ? 'pill done' : 'pill error';
+    responsePill.className = 'pill';
+  } catch (err) {
+    outputEl.textContent = 'Error: ' + err.message;
+    loadState.textContent = 'Error';
+    loadState.className = 'pill error';
+    responsePill.className = 'pill error';
   }
 });
 
@@ -777,6 +846,10 @@ function buildPrompt({ mode, inputText, voice, corpusText, documentText, documen
 
   if (mode === "draft-from-scratch") {
     return `You are a Cloudflare policy copilot. The user wants you to draft a policy document from scratch.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Based on the user's topic description and the corpus data, draft a complete, polished policy document.\n2. If the corpus contains relevant precedents, use them for style, substance, and framing.\n3. If the corpus does not contain relevant precedents, say so explicitly and draft based on general Cloudflare policy principles (pro-internet, pro-privacy, pro-competition, measured tone).\n4. The draft should be ready for human review with minimal editing.\n5. Include a brief "Rationale" section explaining key choices.\n\nTopic/description:\n${inputText}${documentBlock}${corpusBlock}\n\nReturn:\n- the full draft\n- a brief rationale\n- open questions for human review`;
+  }
+
+  if (mode === "implement-suggestions") {
+    return `You are a Cloudflare policy copilot. The user received feedback on their draft and wants you to implement the suggestions into a revised version.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Read the original draft and the suggestions carefully.\n2. Produce a complete, polished revised draft that incorporates the suggested changes.\n3. Maintain the original structure and flow where possible, but improve clarity, tone, and substance based on the feedback.\n4. Do NOT just list the changes - output the full revised text.\n5. If a suggestion conflicts with the voice or policy stance, use your judgment and prioritize the voice profile.\n6. Add a brief "Changes Made" section at the end listing the key revisions.\n\n${inputText}${documentBlock}${corpusBlock}\n\nReturn the full revised draft followed by a "Changes Made" section.`;
   }
 
     return `You are a Cloudflare policy copilot. The user provided legislation, a consultation, or a regulatory proposal.\n\nWrite in the voice profile: ${voice}.\n\nTask:\n1. Infer Cloudflare's likely stance only if supported by the corpus.\n2. If the corpus does not contain a direct precedent, say so explicitly.\n3. Draft a concise internal stance memo.\n4. Draft a short public comment in Cloudflare's voice.\n5. Surface only the most important unresolved questions.\n6. Avoid overconfident conclusions and avoid legal advice framing.\n\nPolicy input:\n${inputText}${documentBlock}${corpusBlock}\n\nImportant: base your stance and comments primarily on the uploaded document and the user's prompt. Use the corpus only as supporting precedent. If the corpus lacks a relevant precedent, say so explicitly and avoid overconfident conclusions.\n\nReturn:\n- stance summary\n- internal memo\n- draft comment\n- open questions`;
