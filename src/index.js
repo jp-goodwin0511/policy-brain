@@ -764,9 +764,21 @@ function normalizeCorpusText(text, inputText = '') {
 
   const headers = parseCsvLine(firstLine);
   const tokens = tokenize(inputText);
+  const keyPhrases = extractKeyPhrases(inputText);
+  const geoBoost = getGeoBoost(inputText);
+
+  const entityKeywords = [];
+  const entityMatches = inputText.match(/\b(Google|Amazon|Meta|Facebook|Apple|Microsoft|Twitter|Cloudflare|OpenAI|EU Commission|FCC|Ofcom|ACMA|CRTC|Berlin|Brussels|UK|US|EU)\b/gi);
+  if (entityMatches) {
+    for (const m of entityMatches) {
+      const kw = m.toLowerCase();
+      if (!entityKeywords.includes(kw)) entityKeywords.push(kw);
+    }
+  }
+
   const scored = [];
 
-  for (const line of lines.slice(1, 26)) {
+  for (const line of lines.slice(1, 501)) {
     if (!line.trim()) continue;
 
     const cols = parseCsvLine(line);
@@ -782,7 +794,6 @@ function normalizeCorpusText(text, inputText = '') {
     const titleLower = title.toLowerCase();
     const scoreNum = Number(String(score).replace(/[^0-9.-]/g, '')) || 0;
 
-    // Drop low-signal rows
     if (scoreNum < 5) continue;
     if (titleLower.includes('buildathon')) continue;
     if (titleLower.includes('party')) continue;
@@ -791,19 +802,63 @@ function normalizeCorpusText(text, inputText = '') {
     if (!summary && scoreNum < 7) continue;
 
     const hay = (title + ' ' + topic + ' ' + jurisdiction + ' ' + status + ' ' + summary).toLowerCase();
+
     let hit = 0;
     for (const token of tokens) {
       if (token && hay.includes(token)) hit += 1;
     }
 
+    let phraseHit = 0;
+    for (const phrase of keyPhrases) {
+      if (hay.includes(phrase)) phraseHit += 1;
+    }
+
+    let entityHit = 0;
+    for (const kw of entityKeywords) {
+      if (hay.includes(kw)) entityHit += 1;
+    }
+
+    let geoMatch = 0;
+    if (geoBoost.eu && /\b(eu|european|europe|commission|gdpr|dma|dsa|berlin|brussels)\b/i.test(hay)) geoMatch += geoBoost.eu;
+    if (geoBoost.us && /\b(us|united states|american|usa|fcc|congress|federal|washington)\b/i.test(hay)) geoMatch += geoBoost.us;
+    if (geoBoost.uk && /\b(uk|united kingdom|british|ofcom|london|england)\b/i.test(hay)) geoMatch += geoBoost.uk;
+    if (geoBoost.au && /\b(australia|australian|canberra|acma)\b/i.test(hay)) geoMatch += geoBoost.au;
+    if (geoBoost.ca && /\b(canada|canadian|crtc|ottawa)\b/i.test(hay)) geoMatch += geoBoost.ca;
+
+    const jurisLower = jurisdiction.toLowerCase();
+    if (geoBoost.eu && (jurisLower.includes('eu') || jurisLower.includes('european') || jurisLower.includes('europe'))) geoMatch += 2;
+    if (geoBoost.us && (jurisLower.includes('us') || jurisLower.includes('united states') || jurisLower.includes('federal'))) geoMatch += 2;
+    if (geoBoost.uk && (jurisLower.includes('uk') || jurisLower.includes('united kingdom') || jurisLower.includes('british'))) geoMatch += 2;
+
+    const topicLower = topic.toLowerCase();
+    if (/\b(crawler|scraping|bot|robots\.txt|search|indexing|ai training|data mining)\b/i.test(inputText)) {
+      if (/\b(crawler|scraping|bot|search|indexing|data)\b/i.test(topicLower + ' ' + titleLower)) geoMatch += 2;
+    }
+    if (/\b(privacy|gdpr|data protection|personal data)\b/i.test(inputText)) {
+      if (/\b(privacy|gdpr|data protection|personal data)\b/i.test(topicLower + ' ' + titleLower)) geoMatch += 2;
+    }
+    if (/\b(interconnection|network|peering|traffic|isp)\b/i.test(inputText)) {
+      if (/\b(interconnection|network|peering|traffic|isp)\b/i.test(topicLower + ' ' + titleLower)) geoMatch += 2;
+    }
+
+    const weight = (hit * 5) + (phraseHit * 15) + (entityHit * 20) + (scoreNum * 0.5) + geoMatch;
+
     scored.push({
-      weight: hit * 10 + scoreNum,
+      weight,
       text: title + ' | topic=' + topic + ' | jurisdiction=' + jurisdiction + ' | status=' + status + ' | score=' + score + ' | summary=' + summary
     });
   }
 
   scored.sort((a, b) => b.weight - a.weight);
-  return scored.slice(0, 6).map(x => x.text).join('\n');
+
+  const topResults = scored.slice(0, 6);
+  const minWeight = 3;
+
+  if (topResults.length > 0 && topResults[0].weight < minWeight) {
+    return '(No highly relevant corpus entries found for this query. The corpus may lack coverage for this topic, or you may want to add more specific keywords.)';
+  }
+
+  return topResults.filter(r => r.weight >= minWeight).map(x => x.text).join('\n');
 }
 
 function parseCsvLine(line) {
@@ -875,4 +930,30 @@ function tokenize(s) {
     .split(/\s+/)
     .filter(w => w.length > 3)
     .slice(0, 20);
+}
+
+function extractKeyPhrases(text) {
+  const lower = text.toLowerCase().replace(/[^a-z0-9\s-]/g, ' ');
+  const words = lower.split(/\s+/).filter(w => w.length > 2);
+  const phrases = [];
+  for (let i = 0; i < words.length - 1; i++) {
+    const bigram = words[i] + ' ' + words[i + 1];
+    if (bigram.length > 6 && !phrases.includes(bigram)) phrases.push(bigram);
+  }
+  for (let i = 0; i < words.length - 2; i++) {
+    const trigram = words[i] + ' ' + words[i + 1] + ' ' + words[i + 2];
+    if (trigram.length > 10 && !phrases.includes(trigram)) phrases.push(trigram);
+  }
+  return phrases.slice(0, 15);
+}
+
+function getGeoBoost(inputText) {
+  const boost = {};
+  const lower = inputText.toLowerCase();
+  if (/\b(eu|european|europe|commission|member state|gdpr|dma|dsa|berlin|brussels|paris)\b/.test(lower)) boost.eu = 4;
+  if (/\b(us|united states|american|usa|fcc|congress|federal|washington|nprm)\b/.test(lower)) boost.us = 4;
+  if (/\b(uk|united kingdom|british|ofcom|london|england)\b/.test(lower)) boost.uk = 4;
+  if (/\b(australia|australian|canberra|acma)\b/.test(lower)) boost.au = 4;
+  if (/\b(canada|canadian|crtc|ottawa)\b/.test(lower)) boost.ca = 4;
+  return boost;
 }
